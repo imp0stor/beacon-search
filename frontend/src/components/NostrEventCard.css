@@ -1,0 +1,335 @@
+/* Nostr Event Card Styles */
+
+.nostr-event-card {
+  background: #1a1a2e;
+  border: 1px solid #2d2d44;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nostr-event-card:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.nostr-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kind-badge {
+  background: #8b5cf6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.timestamp {
+  color: #888;
+  font-size: 13px;
+}
+
+.nostr-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #2d2d44;
+  font-size: 13px;
+}
+
+.author {
+  color: #aaa;
+}
+
+.nostr-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nostr-link:hover {
+  text-decoration: underline;
+}
+
+/* Q&A Styles */
+.nostr-qa-question {
+  color: #e0e0e0;
+}
+
+.qa-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.qa-vote-score {
+  background: #2d2d44;
+  color: #8b5cf6;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.qa-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.qa-bounty {
+  background: #f59e0b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.qa-answered {
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nostr-qa-answer .answer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.vote-score {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.accepted-badge {
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* KB Article Styles */
+.nostr-kb-article .kb-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.doc-type {
+  background: #6366f1;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.version {
+  background: #2d2d44;
+  color: #aaa;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.summary {
+  color: #bbb;
+  font-style: italic;
+  margin: 8px 0;
+}
+
+/* Studio Styles */
+.nostr-studio .studio-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.studio-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.studio-info h3 {
+  margin: 0 0 4px 0;
+  color: #e0e0e0;
+}
+
+.studio-website {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.studio-website:hover {
+  text-decoration: underline;
+}
+
+/* Podcast Styles */
+.nostr-show .show-header,
+.nostr-episode .episode-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.show-image,
+.episode-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.show-info h3,
+.episode-info h3 {
+  margin: 0 0 4px 0;
+  color: #e0e0e0;
+}
+
+.v4v-badge {
+  background: #f59e0b;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.duration,
+.published {
+  color: #aaa;
+  font-size: 13px;
+  margin-right: 8px;
+}
+
+.chapters {
+  margin-top: 12px;
+  padding: 12px;
+  background: #2d2d44;
+  border-radius: 6px;
+}
+
+.chapters strong {
+  color: #8b5cf6;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.chapters ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.chapters li {
+  color: #ccc;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+/* Bounty Styles */
+.nostr-bounty .bounty-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bounty-amount {
+  background: #f59e0b;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.bounty-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-open {
+  background: #10b981;
+  color: white;
+}
+
+.status-claimed {
+  background: #f59e0b;
+  color: white;
+}
+
+.status-closed {
+  background: #6b7280;
+  color: white;
+}
+
+.expiry {
+  margin-top: 8px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+/* Common Styles */
+h3 {
+  margin: 0 0 8px 0;
+  color: #e0e0e0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.content-preview {
+  color: #bbb;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+
+.description {
+  color: #bbb;
+  line-height: 1.6;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag {
+  background: #2d2d44;
+  color: #8b5cf6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Generic Event */
+.nostr-generic h3 {
+  color: #e0e0e0;
+}

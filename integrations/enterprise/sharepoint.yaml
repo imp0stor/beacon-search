@@ -1,0 +1,142 @@
+# Microsoft SharePoint Integration Template
+name: "SharePoint"
+type: "rest"
+description: "Microsoft SharePoint sites, pages, documents, and lists"
+icon: "sharepoint"
+category: "enterprise"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "tenant_id"
+      label: "Tenant ID"
+      type: "text"
+      required: true
+    - name: "client_id"
+      label: "Application (Client) ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+    - name: "site_url"
+      label: "SharePoint Site URL"
+      type: "url"
+      required: false
+      placeholder: "https://company.sharepoint.com/sites/mysite"
+  oauth_urls:
+    authorize: "https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/authorize"
+    token: "https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token"
+  scopes:
+    - "https://graph.microsoft.com/Sites.Read.All"
+    - "https://graph.microsoft.com/Files.Read.All"
+
+endpoints:
+  list_sites:
+    url: "https://graph.microsoft.com/v1.0/sites"
+    method: "GET"
+    params:
+      search: "*"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+      results_field: "value"
+  
+  list_pages:
+    url: "https://graph.microsoft.com/v1.0/sites/${site_id}/pages"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+      results_field: "value"
+  
+  get_page:
+    url: "https://graph.microsoft.com/v1.0/sites/${site_id}/pages/${page_id}"
+    method: "GET"
+    params:
+      expand: "canvasLayout"
+  
+  list_drive_items:
+    url: "https://graph.microsoft.com/v1.0/sites/${site_id}/drive/root/children"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+  
+  search:
+    url: "https://graph.microsoft.com/v1.0/search/query"
+    method: "POST"
+    body:
+      requests:
+        - entityTypes: ["driveItem", "listItem", "site"]
+          query:
+            queryString: "${query}"
+          size: 50
+  
+  delta:
+    url: "https://graph.microsoft.com/v1.0/sites/${site_id}/drive/root/delta"
+    method: "GET"
+
+mapping:
+  page:
+    id: "$.id"
+    title: "$.title"
+    content: "$.webParts[*].innerHtml"
+    content_type: "html"
+    url: "$.webUrl"
+    author: "$.createdBy.user.displayName"
+    modified: "$.lastModifiedDateTime"
+    created: "$.createdDateTime"
+    document_type: "page"
+    attributes:
+      site_id: "$.parentReference.siteId"
+  
+  document:
+    id: "$.id"
+    title: "$.name"
+    content: ""
+    url: "$.webUrl"
+    author: "$.createdBy.user.displayName"
+    modified: "$.lastModifiedDateTime"
+    created: "$.createdDateTime"
+    document_type: "document"
+    attributes:
+      mime_type: "$.file.mimeType"
+      size: "$.size"
+      path: "$.parentReference.path"
+
+rate_limit:
+  requests_per_minute: 1200
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - delta_sync
+  - webhooks
+  - permissions
+  - site_filter
+  - document_library_filter
+  - ocr_support
+
+content_types:
+  - pages
+  - documents
+  - list_items
+  - news_posts
+
+webhook_events:
+  - "updated"
+  - "created"
+  - "deleted"
+
+content_processors:
+  - name: "extract_text"
+    config:
+      supported_types:
+        - "application/pdf"
+        - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        - "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        - "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+docs_url: "https://learn.microsoft.com/en-us/graph/api/resources/sharepoint"

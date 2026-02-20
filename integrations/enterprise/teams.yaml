@@ -1,0 +1,110 @@
+# Microsoft Teams Integration Template
+name: "Microsoft Teams"
+type: "rest"
+description: "Microsoft Teams messages, channels, and wiki"
+icon: "teams"
+category: "messaging"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "tenant_id"
+      label: "Tenant ID"
+      type: "text"
+      required: true
+    - name: "client_id"
+      label: "Application (Client) ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/authorize"
+    token: "https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token"
+  scopes:
+    - "https://graph.microsoft.com/Team.ReadBasic.All"
+    - "https://graph.microsoft.com/Channel.ReadBasic.All"
+    - "https://graph.microsoft.com/ChannelMessage.Read.All"
+
+endpoints:
+  list_teams:
+    url: "https://graph.microsoft.com/v1.0/me/joinedTeams"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+      results_field: "value"
+  
+  list_channels:
+    url: "https://graph.microsoft.com/v1.0/teams/${team_id}/channels"
+    method: "GET"
+  
+  list_messages:
+    url: "https://graph.microsoft.com/v1.0/teams/${team_id}/channels/${channel_id}/messages"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+      results_field: "value"
+  
+  get_message:
+    url: "https://graph.microsoft.com/v1.0/teams/${team_id}/channels/${channel_id}/messages/${message_id}"
+    method: "GET"
+  
+  list_replies:
+    url: "https://graph.microsoft.com/v1.0/teams/${team_id}/channels/${channel_id}/messages/${message_id}/replies"
+    method: "GET"
+  
+  delta:
+    url: "https://graph.microsoft.com/v1.0/teams/${team_id}/channels/${channel_id}/messages/delta"
+    method: "GET"
+
+mapping:
+  id: "$.id"
+  title: "Message in ${channel_name}"
+  content: "$.body.content"
+  content_type: "html"
+  url: "https://teams.microsoft.com/l/message/${channel_id}/${$.id}"
+  author: "$.from.user.displayName"
+  modified: "$.lastModifiedDateTime"
+  created: "$.createdDateTime"
+  document_type: "message"
+  attributes:
+    team_id: "${team_id}"
+    channel_id: "${channel_id}"
+    message_type: "$.messageType"
+    importance: "$.importance"
+    reactions: "$.reactions"
+    attachments: "$.attachments"
+    mentions: "$.mentions"
+
+rate_limit:
+  requests_per_second: 2
+  burst: 30
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - delta_sync
+  - webhooks
+  - team_filter
+  - channel_filter
+  - replies
+  - attachments
+
+content_types:
+  - messages
+  - replies
+  - wiki_tabs
+
+webhook_events:
+  - "chatMessage"
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      preserve_mentions: true
+
+docs_url: "https://learn.microsoft.com/en-us/graph/api/resources/teams-api-overview"

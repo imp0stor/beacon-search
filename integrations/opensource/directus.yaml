@@ -1,0 +1,109 @@
+# Directus Integration Template
+name: "Directus"
+type: "rest"
+description: "Directus headless CMS collections"
+icon: "directus"
+category: "cms"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Directus URL"
+      type: "url"
+      required: true
+      placeholder: "https://cms.example.com"
+    - name: "access_token"
+      label: "Static Access Token"
+      type: "password"
+      required: true
+      help: "Generate at Settings > Access Tokens"
+  headers:
+    Authorization: "Bearer ${access_token}"
+
+endpoints:
+  list_collections:
+    url: "${base_url}/collections"
+    method: "GET"
+  
+  list_items:
+    url: "${base_url}/items/${collection}"
+    method: "GET"
+    params:
+      limit: 100
+      meta: "total_count,filter_count"
+      fields: "*.*"
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "limit"
+      results_field: "data"
+      total_field: "meta.total_count"
+  
+  get_item:
+    url: "${base_url}/items/${collection}/${id}"
+    method: "GET"
+    params:
+      fields: "*.*"
+  
+  search:
+    url: "${base_url}/items/${collection}"
+    method: "GET"
+    params:
+      search: "${query}"
+      limit: 50
+  
+  get_schema:
+    url: "${base_url}/fields/${collection}"
+    method: "GET"
+
+mapping:
+  id: "$.id"
+  title: "$.title"
+  content: "$.content"
+  content_type: "html"
+  url: "${base_url}/admin/content/${collection}/${$.id}"
+  modified: "$.date_updated"
+  created: "$.date_created"
+  author: "$.user_created.email"
+  attributes:
+    status: "$.status"
+    sort: "$.sort"
+
+dynamic_collections:
+  enabled: true
+  exclude:
+    - "directus_*"
+  field_mapping:
+    title_fields:
+      - "title"
+      - "name"
+      - "headline"
+    content_fields:
+      - "content"
+      - "body"
+      - "description"
+      - "text"
+      - "wysiwyg"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - dynamic_collections
+  - revisions
+  - translations
+
+realtime:
+  type: "websocket"
+  url: "${base_url}/websocket"
+  
+webhook_events:
+  - "items.create"
+  - "items.update"
+  - "items.delete"
+
+docs_url: "https://docs.directus.io/reference/introduction.html"

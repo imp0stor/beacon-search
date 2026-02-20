@@ -1,0 +1,165 @@
+# Monday.com Integration Template
+name: "Monday.com"
+type: "graphql"
+description: "Monday.com boards, items, and updates"
+icon: "monday"
+category: "project-management"
+
+auth:
+  type: "token"
+  fields:
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at Admin > API"
+  headers:
+    Authorization: "${api_token}"
+    Content-Type: "application/json"
+
+endpoints:
+  graphql:
+    url: "https://api.monday.com/v2"
+    method: "POST"
+
+queries:
+  list_boards:
+    query: |
+      query {
+        boards(limit: 100) {
+          id
+          name
+          description
+          updated_at
+          state
+          workspace {
+            id
+            name
+          }
+        }
+      }
+    results_field: "data.boards"
+  
+  list_items:
+    query: |
+      query ($board_id: ID!, $cursor: String) {
+        boards(ids: [$board_id]) {
+          items_page(limit: 100, cursor: $cursor) {
+            cursor
+            items {
+              id
+              name
+              created_at
+              updated_at
+              column_values {
+                id
+                title
+                text
+                value
+              }
+              updates {
+                id
+                body
+                created_at
+              }
+            }
+          }
+        }
+      }
+    variables:
+      board_id: "${board_id}"
+    pagination:
+      type: "cursor"
+      cursor_field: "data.boards[0].items_page.cursor"
+      results_field: "data.boards[0].items_page.items"
+  
+  get_item:
+    query: |
+      query ($item_id: ID!) {
+        items(ids: [$item_id]) {
+          id
+          name
+          created_at
+          updated_at
+          column_values {
+            id
+            title
+            text
+            value
+          }
+          updates {
+            id
+            body
+            created_at
+          }
+          subitems {
+            id
+            name
+          }
+        }
+      }
+    variables:
+      item_id: "${item_id}"
+  
+  search:
+    query: |
+      query ($query: String!) {
+        items_by_column_values(
+          board_id: ${board_id}
+          column_id: "name"
+          column_value: $query
+        ) {
+          id
+          name
+          column_values {
+            text
+          }
+        }
+      }
+
+mapping:
+  item:
+    id: "$.id"
+    title: "$.name"
+    content: "$.updates[0].body"
+    content_type: "html"
+    url: "https://view.monday.com/boards/${board_id}/pulses/${$.id}"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "item"
+    attributes:
+      board_id: "${board_id}"
+      columns: "$.column_values"
+      subitems: "$.subitems[*].name"
+  
+  board:
+    id: "$.id"
+    title: "$.name"
+    content: "$.description"
+    url: "https://view.monday.com/boards/${$.id}"
+    modified: "$.updated_at"
+    document_type: "board"
+
+rate_limit:
+  complexity_per_minute: 10000000
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - workspace_filter
+  - board_filter
+  - column_values
+  - subitems
+
+content_types:
+  - items
+  - boards
+  - updates
+
+webhook_events:
+  - "create_item"
+  - "change_column_value"
+  - "create_update"
+
+docs_url: "https://developer.monday.com/api-reference/docs"

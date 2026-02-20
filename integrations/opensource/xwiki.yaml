@@ -1,0 +1,86 @@
+# XWiki Integration Template
+name: "XWiki"
+type: "rest"
+description: "XWiki collaborative wiki platform"
+icon: "xwiki"
+category: "wiki"
+
+auth:
+  type: "basic"
+  fields:
+    - name: "base_url"
+      label: "XWiki URL"
+      type: "url"
+      required: true
+      placeholder: "https://wiki.example.com"
+    - name: "username"
+      label: "Username"
+      type: "text"
+      required: true
+    - name: "password"
+      label: "Password"
+      type: "password"
+      required: true
+  headers:
+    Accept: "application/json"
+
+endpoints:
+  list_spaces:
+    url: "${base_url}/rest/wikis/xwiki/spaces"
+    method: "GET"
+  
+  list_pages:
+    url: "${base_url}/rest/wikis/xwiki/spaces/${space}/pages"
+    method: "GET"
+  
+  get_page:
+    url: "${base_url}/rest/wikis/xwiki/spaces/${space}/pages/${page}"
+    method: "GET"
+  
+  get_page_content:
+    url: "${base_url}/rest/wikis/xwiki/spaces/${space}/pages/${page}/content"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/rest/wikis/xwiki/search"
+    method: "GET"
+    params:
+      q: "${query}"
+      scope: "content"
+  
+  list_attachments:
+    url: "${base_url}/rest/wikis/xwiki/spaces/${space}/pages/${page}/attachments"
+    method: "GET"
+
+mapping:
+  id: "$.id"
+  title: "$.title"
+  content: "$.content"
+  content_type: "xwiki"
+  url: "${base_url}/bin/view/${$.space}/${$.name}"
+  author: "$.author"
+  modified: "$.modified"
+  created: "$.created"
+  attributes:
+    space: "$.space"
+    parent: "$.parent"
+    syntax: "$.syntax"
+    version: "$.version"
+
+rate_limit:
+  requests_per_minute: 120
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - space_filter
+  - attachments
+  - history
+
+content_processors:
+  - name: "xwiki_to_text"
+    config:
+      preserve_macros: false
+      strip_velocity: true
+
+docs_url: "https://www.xwiki.org/xwiki/bin/view/Documentation/DevGuide/API/"

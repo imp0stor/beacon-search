@@ -1,0 +1,124 @@
+# Google Drive Integration Template
+name: "Google Drive"
+type: "rest"
+description: "Google Drive files, Docs, Sheets, and Slides"
+icon: "google-drive"
+category: "storage"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://accounts.google.com/o/oauth2/v2/auth"
+    token: "https://oauth2.googleapis.com/token"
+  scopes:
+    - "https://www.googleapis.com/auth/drive.readonly"
+    - "https://www.googleapis.com/auth/drive.metadata.readonly"
+
+endpoints:
+  list_files:
+    url: "https://www.googleapis.com/drive/v3/files"
+    method: "GET"
+    params:
+      pageSize: 1000
+      fields: "nextPageToken,files(id,name,mimeType,modifiedTime,createdTime,owners,size,webViewLink,parents,description)"
+      q: "trashed = false"
+    pagination:
+      type: "cursor"
+      cursor_param: "pageToken"
+      next_field: "nextPageToken"
+      results_field: "files"
+  
+  get_file:
+    url: "https://www.googleapis.com/drive/v3/files/${file_id}"
+    method: "GET"
+    params:
+      fields: "*"
+  
+  download_file:
+    url: "https://www.googleapis.com/drive/v3/files/${file_id}"
+    method: "GET"
+    params:
+      alt: "media"
+  
+  export_google_doc:
+    url: "https://www.googleapis.com/drive/v3/files/${file_id}/export"
+    method: "GET"
+    params:
+      mimeType: "text/plain"
+  
+  search:
+    url: "https://www.googleapis.com/drive/v3/files"
+    method: "GET"
+    params:
+      q: "fullText contains '${query}'"
+      pageSize: 100
+  
+  changes:
+    url: "https://www.googleapis.com/drive/v3/changes"
+    method: "GET"
+    params:
+      pageToken: "${page_token}"
+      fields: "nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,mimeType,modifiedTime))"
+
+mapping:
+  id: "$.id"
+  title: "$.name"
+  content: ""
+  url: "$.webViewLink"
+  author: "$.owners[0].displayName"
+  modified: "$.modifiedTime"
+  created: "$.createdTime"
+  document_type: "file"
+  attributes:
+    mime_type: "$.mimeType"
+    size: "$.size"
+    parents: "$.parents"
+    description: "$.description"
+    shared: "$.shared"
+
+google_mime_types:
+  document: "application/vnd.google-apps.document"
+  spreadsheet: "application/vnd.google-apps.spreadsheet"
+  presentation: "application/vnd.google-apps.presentation"
+  form: "application/vnd.google-apps.form"
+  drawing: "application/vnd.google-apps.drawing"
+
+export_formats:
+  "application/vnd.google-apps.document": "text/plain"
+  "application/vnd.google-apps.spreadsheet": "text/csv"
+  "application/vnd.google-apps.presentation": "text/plain"
+
+rate_limit:
+  requests_per_minute: 12000
+  requests_per_second: 10
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - push_notifications
+  - folder_filter
+  - file_type_filter
+  - shared_drives
+  - permissions
+  - changes_api
+
+webhook_events:
+  - "changes"
+
+content_processors:
+  - name: "extract_text"
+    config:
+      use_google_export: true
+      ocr_images: true
+      max_file_size_mb: 100
+
+docs_url: "https://developers.google.com/drive/api/reference/rest/v3"

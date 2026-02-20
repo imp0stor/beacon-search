@@ -1,0 +1,91 @@
+# Docusaurus Integration Template
+name: "Docusaurus"
+type: "file"
+description: "Docusaurus static documentation sites"
+icon: "docusaurus"
+category: "documentation"
+
+auth:
+  type: "none"
+  fields:
+    - name: "site_url"
+      label: "Site URL"
+      type: "url"
+      required: true
+      placeholder: "https://docs.example.com"
+    - name: "docs_path"
+      label: "Docs Path"
+      type: "text"
+      default: "/docs"
+    - name: "git_url"
+      label: "Git Repository URL"
+      type: "url"
+      required: false
+      help: "For syncing from source files"
+    - name: "branch"
+      label: "Branch"
+      type: "text"
+      default: "main"
+
+endpoints:
+  sitemap:
+    url: "${site_url}/sitemap.xml"
+    method: "GET"
+  
+  search_index:
+    url: "${site_url}/search-index.json"
+    method: "GET"
+  
+  page:
+    url: "${site_url}${path}"
+    method: "GET"
+
+source_files:
+  patterns:
+    - "docs/**/*.md"
+    - "docs/**/*.mdx"
+    - "blog/**/*.md"
+  ignore:
+    - "**/node_modules/**"
+    - "**/_*.md"
+
+mapping:
+  id: "$.url"
+  title: "$.title"
+  content: "$.content"
+  content_type: "markdown"
+  url: "${site_url}${$.url}"
+  modified: "$.lastUpdated"
+  attributes:
+    sidebar_position: "$.sidebar_position"
+    tags: "$.tags"
+    category: "$.category"
+
+frontmatter:
+  title: "title"
+  description: "description"
+  sidebar_position: "sidebar_position"
+  tags: "tags"
+  keywords: "keywords"
+  last_update:
+    date: "modified"
+    author: "author"
+
+rate_limit:
+  requests_per_minute: 60
+  concurrent: 3
+
+features:
+  - sitemap_discovery
+  - frontmatter_parsing
+  - git_sync
+  - versioning
+
+content_processors:
+  - name: "mdx_to_markdown"
+    config:
+      strip_jsx: true
+      preserve_code_blocks: true
+  - name: "extract_frontmatter"
+
+docs_url: "https://docusaurus.io/docs"

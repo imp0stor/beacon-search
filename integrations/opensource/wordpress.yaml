@@ -1,0 +1,131 @@
+# WordPress Integration Template
+name: "WordPress"
+type: "rest"
+description: "WordPress posts, pages, and custom post types"
+icon: "wordpress"
+category: "cms"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "base_url"
+      label: "WordPress URL"
+      type: "url"
+      required: true
+      placeholder: "https://blog.example.com"
+    - name: "auth_type"
+      label: "Authentication Type"
+      type: "select"
+      options:
+        - "none"
+        - "application_password"
+        - "jwt"
+      default: "none"
+    - name: "username"
+      label: "Username"
+      type: "text"
+      required: false
+      show_if: "auth_type != 'none'"
+    - name: "password"
+      label: "Application Password"
+      type: "password"
+      required: false
+      show_if: "auth_type == 'application_password'"
+      help: "Generate at Users > Profile > Application Passwords"
+    - name: "jwt_token"
+      label: "JWT Token"
+      type: "password"
+      required: false
+      show_if: "auth_type == 'jwt'"
+
+endpoints:
+  list_posts:
+    url: "${base_url}/wp-json/wp/v2/posts"
+    method: "GET"
+    params:
+      per_page: 100
+      _embed: true
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "per_page"
+      header_total: "X-WP-Total"
+      header_pages: "X-WP-TotalPages"
+  
+  list_pages:
+    url: "${base_url}/wp-json/wp/v2/pages"
+    method: "GET"
+    params:
+      per_page: 100
+      _embed: true
+  
+  get_post:
+    url: "${base_url}/wp-json/wp/v2/posts/${id}"
+    method: "GET"
+    params:
+      _embed: true
+  
+  search:
+    url: "${base_url}/wp-json/wp/v2/search"
+    method: "GET"
+    params:
+      search: "${query}"
+      per_page: 50
+  
+  list_categories:
+    url: "${base_url}/wp-json/wp/v2/categories"
+    method: "GET"
+  
+  list_tags:
+    url: "${base_url}/wp-json/wp/v2/tags"
+    method: "GET"
+
+mapping:
+  id: "$.id"
+  title: "$.title.rendered"
+  content: "$.content.rendered"
+  content_type: "html"
+  url: "$.link"
+  author: "$._embedded.author[0].name"
+  modified: "$.modified"
+  created: "$.date"
+  document_type: "$.type"
+  attributes:
+    slug: "$.slug"
+    status: "$.status"
+    categories: "$._embedded.wp:term[0][*].name"
+    tags: "$._embedded.wp:term[1][*].name"
+    featured_image: "$._embedded.wp:featuredmedia[0].source_url"
+    excerpt: "$.excerpt.rendered"
+
+rate_limit:
+  requests_per_minute: 600
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - custom_post_types
+  - category_filter
+  - tag_filter
+  - status_filter
+
+content_types:
+  - posts
+  - pages
+  - custom_post_types
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      strip_shortcodes: true
+      preserve_links: true
+
+custom_post_types:
+  discovery:
+    url: "${base_url}/wp-json/wp/v2/types"
+    method: "GET"
+
+webhook_plugin: "WP Webhooks"
+
+docs_url: "https://developer.wordpress.org/rest-api/"

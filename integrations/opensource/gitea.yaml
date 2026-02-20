@@ -1,0 +1,105 @@
+# Gitea Integration Template
+name: "Gitea"
+type: "rest"
+description: "Gitea repositories, issues, and wiki pages"
+icon: "gitea"
+category: "development"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Gitea URL"
+      type: "url"
+      required: true
+      placeholder: "https://gitea.example.com"
+    - name: "access_token"
+      label: "Access Token"
+      type: "password"
+      required: true
+      help: "Generate at Settings > Applications > Generate Token"
+  headers:
+    Authorization: "token ${access_token}"
+
+endpoints:
+  list_repos:
+    url: "${base_url}/api/v1/user/repos"
+    method: "GET"
+    params:
+      limit: 50
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "limit"
+  
+  list_issues:
+    url: "${base_url}/api/v1/repos/${owner}/${repo}/issues"
+    method: "GET"
+    params:
+      state: "all"
+      limit: 50
+    pagination:
+      type: "page"
+      page_param: "page"
+  
+  get_readme:
+    url: "${base_url}/api/v1/repos/${owner}/${repo}/readme"
+    method: "GET"
+  
+  get_file:
+    url: "${base_url}/api/v1/repos/${owner}/${repo}/contents/${path}"
+    method: "GET"
+    params:
+      ref: "main"
+  
+  search:
+    url: "${base_url}/api/v1/repos/search"
+    method: "GET"
+    params:
+      q: "${query}"
+
+mapping:
+  repo:
+    id: "$.id"
+    title: "$.full_name"
+    content: "$.description"
+    url: "$.html_url"
+    author: "$.owner.login"
+    modified: "$.updated_at"
+    document_type: "repository"
+  
+  issue:
+    id: "$.id"
+    title: "$.title"
+    content: "$.body"
+    content_type: "markdown"
+    url: "$.html_url"
+    author: "$.user.login"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "issue"
+    attributes:
+      state: "$.state"
+      labels: "$.labels[*].name"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - repo_filter
+
+content_types:
+  - repositories
+  - issues
+  - readme_files
+  - markdown_files
+
+webhook_events:
+  - "issues"
+  - "push"
+  - "repository"
+
+docs_url: "https://docs.gitea.io/en-us/api-usage/"

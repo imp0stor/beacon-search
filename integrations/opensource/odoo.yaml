@@ -1,0 +1,112 @@
+# Odoo Integration Template
+name: "Odoo"
+type: "rest"
+description: "Odoo ERP documents, notes, and knowledge base"
+icon: "odoo"
+category: "erp"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "base_url"
+      label: "Odoo URL"
+      type: "url"
+      required: true
+      placeholder: "https://company.odoo.com"
+    - name: "database"
+      label: "Database Name"
+      type: "text"
+      required: true
+    - name: "username"
+      label: "Username/Email"
+      type: "email"
+      required: true
+    - name: "api_key"
+      label: "API Key"
+      type: "password"
+      required: true
+      help: "Generate at Settings > Users > API Keys"
+
+endpoints:
+  authenticate:
+    url: "${base_url}/web/session/authenticate"
+    method: "POST"
+    body:
+      jsonrpc: "2.0"
+      params:
+        db: "${database}"
+        login: "${username}"
+        password: "${api_key}"
+  
+  search_read:
+    url: "${base_url}/web/dataset/search_read"
+    method: "POST"
+    body:
+      jsonrpc: "2.0"
+      params:
+        model: "${model}"
+        domain: []
+        fields: ["name", "body", "create_date", "write_date", "create_uid"]
+        limit: 100
+        offset: 0
+  
+  read:
+    url: "${base_url}/web/dataset/call_kw"
+    method: "POST"
+    body:
+      jsonrpc: "2.0"
+      params:
+        model: "${model}"
+        method: "read"
+        args: [["${id}"]]
+        kwargs:
+          fields: []
+
+models:
+  - name: "knowledge.article"
+    display: "Knowledge Articles"
+    mapping:
+      title: "name"
+      content: "body"
+      url_pattern: "/knowledge/article/${id}"
+  
+  - name: "note.note"
+    display: "Notes"
+    mapping:
+      title: "name"
+      content: "memo"
+      url_pattern: "/web#id=${id}&model=note.note"
+  
+  - name: "mail.message"
+    display: "Messages"
+    mapping:
+      title: "subject"
+      content: "body"
+
+mapping:
+  id: "$.id"
+  title: "$.name"
+  content: "$.body"
+  content_type: "html"
+  url: "${base_url}${url_pattern}"
+  author: "$.create_uid[1]"
+  modified: "$.write_date"
+  created: "$.create_date"
+  attributes:
+    model: "$.model"
+
+rate_limit:
+  requests_per_minute: 200
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - model_filter
+  - domain_filter
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      preserve_tables: true
+
+docs_url: "https://www.odoo.com/documentation/17.0/developer/reference/external_api.html"

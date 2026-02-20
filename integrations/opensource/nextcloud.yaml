@@ -1,0 +1,111 @@
+# Nextcloud Integration Template
+name: "Nextcloud"
+type: "rest"
+description: "Nextcloud files, documents, and notes"
+icon: "nextcloud"
+category: "storage"
+
+auth:
+  type: "basic"
+  fields:
+    - name: "base_url"
+      label: "Nextcloud URL"
+      type: "url"
+      required: true
+      placeholder: "https://cloud.example.com"
+    - name: "username"
+      label: "Username"
+      type: "text"
+      required: true
+    - name: "password"
+      label: "App Password"
+      type: "password"
+      required: true
+      help: "Generate at Settings > Security > Devices & sessions"
+  headers:
+    OCS-APIRequest: "true"
+
+endpoints:
+  list_files:
+    url: "${base_url}/remote.php/dav/files/${username}/"
+    method: "PROPFIND"
+    headers:
+      Depth: "infinity"
+    body_xml: |
+      <?xml version="1.0"?>
+      <d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">
+        <d:prop>
+          <d:getlastmodified/>
+          <d:getcontenttype/>
+          <d:getcontentlength/>
+          <oc:fileid/>
+          <nc:has-preview/>
+        </d:prop>
+      </d:propfind>
+  
+  get_file:
+    url: "${base_url}/remote.php/dav/files/${username}/${path}"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/ocs/v2.php/search/providers/files/search"
+    method: "GET"
+    params:
+      term: "${query}"
+      limit: 50
+    headers:
+      Accept: "application/json"
+  
+  get_file_info:
+    url: "${base_url}/ocs/v2.php/apps/files_sharing/api/v1/shares"
+    method: "GET"
+    params:
+      path: "${path}"
+
+mapping:
+  id: "$.oc:fileid"
+  title: "$.d:displayname"
+  content: ""
+  url: "${base_url}/f/${$.oc:fileid}"
+  modified: "$.d:getlastmodified"
+  attributes:
+    path: "$.d:href"
+    content_type: "$.d:getcontenttype"
+    size: "$.d:getcontentlength"
+    etag: "$.d:getetag"
+
+file_types:
+  indexable:
+    - "text/plain"
+    - "text/markdown"
+    - "application/pdf"
+    - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    - "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    - "application/vnd.oasis.opendocument.text"
+
+rate_limit:
+  requests_per_minute: 120
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - folder_filter
+  - file_type_filter
+  - ocr_support
+  - shared_files
+
+content_processors:
+  - name: "extract_text"
+    config:
+      pdf_ocr: true
+      max_file_size_mb: 50
+
+apps:
+  - name: "deck"
+    enabled: true
+    endpoint: "/ocs/v2.php/apps/deck/api/v1.0/boards"
+  - name: "notes"
+    enabled: true
+    endpoint: "/index.php/apps/notes/api/v1/notes"
+
+docs_url: "https://docs.nextcloud.com/server/latest/developer_manual/"

@@ -1,0 +1,103 @@
+# Rocket.Chat Integration Template
+name: "Rocket.Chat"
+type: "rest"
+description: "Rocket.Chat messaging platform channels and messages"
+icon: "rocketchat"
+category: "messaging"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Rocket.Chat URL"
+      type: "url"
+      required: true
+      placeholder: "https://chat.example.com"
+    - name: "user_id"
+      label: "User ID"
+      type: "text"
+      required: true
+    - name: "auth_token"
+      label: "Auth Token"
+      type: "password"
+      required: true
+      help: "Generate via API: POST /api/v1/login"
+  headers:
+    X-User-Id: "${user_id}"
+    X-Auth-Token: "${auth_token}"
+
+endpoints:
+  list_channels:
+    url: "${base_url}/api/v1/channels.list.joined"
+    method: "GET"
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "count"
+      results_field: "channels"
+  
+  list_messages:
+    url: "${base_url}/api/v1/channels.messages"
+    method: "GET"
+    params:
+      roomId: "${channel_id}"
+      count: 100
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "count"
+      results_field: "messages"
+  
+  search:
+    url: "${base_url}/api/v1/chat.search"
+    method: "GET"
+    params:
+      roomId: "${channel_id}"
+      searchText: "${query}"
+  
+  get_room_info:
+    url: "${base_url}/api/v1/rooms.info"
+    method: "GET"
+    params:
+      roomId: "${room_id}"
+
+mapping:
+  id: "$.id"
+  title: "Message in ${room_name}"
+  content: "$.msg"
+  content_type: "markdown"
+  url: "${base_url}/channel/${room_name}?msg=${$.id}"
+  author: "$.u.username"
+  modified: "$.editedAt"
+  created: "$.ts"
+  document_type: "message"
+  attributes:
+    room_id: "$.rid"
+    starred: "$.starred"
+    pinned: "$.pinned"
+    mentions: "$.mentions[*].username"
+    attachments: "$.attachments"
+
+rate_limit:
+  requests_per_minute: 200
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - realtime_api
+  - channel_filter
+  - direct_messages
+  - thread_support
+
+content_types:
+  - messages
+  - threads
+  - discussions
+
+realtime:
+  type: "ddp"
+  url: "${base_url}/websocket"
+  events:
+    - "stream-room-messages"
+
+docs_url: "https://developer.rocket.chat/reference/api"

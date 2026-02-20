@@ -1,0 +1,106 @@
+# Microsoft OneDrive Integration Template
+name: "OneDrive"
+type: "rest"
+description: "Microsoft OneDrive personal and business files"
+icon: "onedrive"
+category: "storage"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "tenant_id"
+      label: "Tenant ID"
+      type: "text"
+      required: true
+      help: "Use 'common' for personal accounts"
+    - name: "client_id"
+      label: "Application (Client) ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/authorize"
+    token: "https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token"
+  scopes:
+    - "https://graph.microsoft.com/Files.Read"
+    - "https://graph.microsoft.com/Files.Read.All"
+
+endpoints:
+  list_root:
+    url: "https://graph.microsoft.com/v1.0/me/drive/root/children"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+      results_field: "value"
+  
+  list_folder:
+    url: "https://graph.microsoft.com/v1.0/me/drive/items/${folder_id}/children"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+  
+  get_item:
+    url: "https://graph.microsoft.com/v1.0/me/drive/items/${item_id}"
+    method: "GET"
+  
+  download:
+    url: "https://graph.microsoft.com/v1.0/me/drive/items/${item_id}/content"
+    method: "GET"
+  
+  search:
+    url: "https://graph.microsoft.com/v1.0/me/drive/root/search(q='${query}')"
+    method: "GET"
+    params:
+      select: "id,name,webUrl,lastModifiedDateTime,createdDateTime,file,folder,size"
+  
+  delta:
+    url: "https://graph.microsoft.com/v1.0/me/drive/root/delta"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "@odata.nextLink"
+      delta_field: "@odata.deltaLink"
+
+mapping:
+  id: "$.id"
+  title: "$.name"
+  content: ""
+  url: "$.webUrl"
+  author: "$.createdBy.user.displayName"
+  modified: "$.lastModifiedDateTime"
+  created: "$.createdDateTime"
+  document_type: "file"
+  attributes:
+    mime_type: "$.file.mimeType"
+    size: "$.size"
+    path: "$.parentReference.path"
+    sha1: "$.file.hashes.sha1Hash"
+
+rate_limit:
+  requests_per_minute: 10000
+  concurrent: 20
+
+features:
+  - incremental_sync
+  - delta_sync
+  - webhooks
+  - folder_filter
+  - file_type_filter
+  - shared_items
+  - permissions
+
+webhook_events:
+  - "updated"
+  - "deleted"
+
+content_processors:
+  - name: "extract_text"
+    config:
+      max_file_size_mb: 100
+
+docs_url: "https://learn.microsoft.com/en-us/graph/api/resources/onedrive"

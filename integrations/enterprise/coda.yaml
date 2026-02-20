@@ -1,0 +1,106 @@
+# Coda Integration Template
+name: "Coda"
+type: "rest"
+description: "Coda docs, pages, and tables"
+icon: "coda"
+category: "productivity"
+
+auth:
+  type: "token"
+  fields:
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at https://coda.io/account"
+  headers:
+    Authorization: "Bearer ${api_token}"
+
+endpoints:
+  list_docs:
+    url: "https://coda.io/apis/v1/docs"
+    method: "GET"
+    params:
+      limit: 100
+    pagination:
+      type: "cursor"
+      next_field: "nextPageLink"
+      results_field: "items"
+  
+  get_doc:
+    url: "https://coda.io/apis/v1/docs/${doc_id}"
+    method: "GET"
+  
+  list_pages:
+    url: "https://coda.io/apis/v1/docs/${doc_id}/pages"
+    method: "GET"
+    params:
+      limit: 100
+  
+  get_page:
+    url: "https://coda.io/apis/v1/docs/${doc_id}/pages/${page_id}"
+    method: "GET"
+  
+  export_page:
+    url: "https://coda.io/apis/v1/docs/${doc_id}/pages/${page_id}/export"
+    method: "POST"
+    body:
+      outputFormat: "markdown"
+  
+  list_tables:
+    url: "https://coda.io/apis/v1/docs/${doc_id}/tables"
+    method: "GET"
+  
+  query_table:
+    url: "https://coda.io/apis/v1/docs/${doc_id}/tables/${table_id}/rows"
+    method: "GET"
+    params:
+      limit: 500
+
+mapping:
+  doc:
+    id: "$.id"
+    title: "$.name"
+    content: ""
+    url: "$.browserLink"
+    author: "$.owner"
+    modified: "$.updatedAt"
+    created: "$.createdAt"
+    document_type: "doc"
+    attributes:
+      folder: "$.folder.name"
+      workspace: "$.workspace.name"
+  
+  page:
+    id: "$.id"
+    title: "$.name"
+    content: "$.contentHtml"
+    content_type: "html"
+    url: "$.browserLink"
+    modified: "$.updatedAt"
+    document_type: "page"
+    attributes:
+      parent: "$.parent.name"
+      icon: "$.icon"
+
+rate_limit:
+  requests_per_minute: 100
+  concurrent: 3
+
+features:
+  - incremental_sync
+  - folder_filter
+  - workspace_filter
+  - table_sync
+  - markdown_export
+
+content_types:
+  - docs
+  - pages
+  - tables
+
+content_processors:
+  - name: "html_to_text"
+  - name: "markdown_cleanup"
+
+docs_url: "https://coda.io/developers/apis/v1"

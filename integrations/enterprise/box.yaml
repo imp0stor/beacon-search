@@ -1,0 +1,121 @@
+# Box Integration Template
+name: "Box"
+type: "rest"
+description: "Box cloud storage files and folders"
+icon: "box"
+category: "storage"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://account.box.com/api/oauth2/authorize"
+    token: "https://api.box.com/oauth2/token"
+  scopes:
+    - "root_readonly"
+
+endpoints:
+  list_folder:
+    url: "https://api.box.com/2.0/folders/${folder_id}/items"
+    method: "GET"
+    params:
+      limit: 1000
+      fields: "id,name,type,modified_at,created_at,size,path_collection,extension,sha1"
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "limit"
+      results_field: "entries"
+      total_field: "total_count"
+  
+  get_file:
+    url: "https://api.box.com/2.0/files/${file_id}"
+    method: "GET"
+    params:
+      fields: "id,name,description,content_created_at,content_modified_at,size,extension,representations"
+  
+  download_file:
+    url: "https://api.box.com/2.0/files/${file_id}/content"
+    method: "GET"
+  
+  get_file_text:
+    url: "https://api.box.com/2.0/files/${file_id}/content"
+    method: "GET"
+    headers:
+      Accept: "text/plain"
+  
+  search:
+    url: "https://api.box.com/2.0/search"
+    method: "GET"
+    params:
+      query: "${query}"
+      limit: 100
+      content_types: "name,description,file_content"
+
+mapping:
+  id: "$.id"
+  title: "$.name"
+  content: ""
+  url: "https://app.box.com/file/${$.id}"
+  author: "$.created_by.login"
+  modified: "$.content_modified_at"
+  created: "$.content_created_at"
+  document_type: "file"
+  attributes:
+    extension: "$.extension"
+    size: "$.size"
+    path: "$.path_collection.entries[*].name"
+    sha1: "$.sha1"
+    description: "$.description"
+
+file_types:
+  indexable:
+    - "pdf"
+    - "doc"
+    - "docx"
+    - "txt"
+    - "md"
+    - "xls"
+    - "xlsx"
+    - "ppt"
+    - "pptx"
+    - "odt"
+    - "ods"
+    - "odp"
+
+rate_limit:
+  requests_per_minute: 1000
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - folder_filter
+  - file_type_filter
+  - ocr_support
+  - permissions
+  - representations
+
+webhook_events:
+  - "FILE.UPLOADED"
+  - "FILE.TRASHED"
+  - "FILE.RESTORED"
+  - "FILE.COPIED"
+  - "FILE.MOVED"
+
+content_processors:
+  - name: "extract_text"
+    config:
+      use_box_text_representation: true
+      fallback_local_extraction: true
+      max_file_size_mb: 100
+
+docs_url: "https://developer.box.com/reference/"

@@ -1,0 +1,106 @@
+# ServiceNow Integration Template
+name: "ServiceNow"
+type: "rest"
+description: "ServiceNow knowledge base articles and catalog items"
+icon: "servicenow"
+category: "itsm"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "instance_url"
+      label: "Instance URL"
+      type: "url"
+      required: true
+      placeholder: "https://company.service-now.com"
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "${instance_url}/oauth_auth.do"
+    token: "${instance_url}/oauth_token.do"
+  scopes:
+    - "useraccount"
+
+endpoints:
+  list_kb_articles:
+    url: "${instance_url}/api/now/table/kb_knowledge"
+    method: "GET"
+    params:
+      sysparm_query: "workflow_state=published"
+      sysparm_display_value: true
+      sysparm_limit: 100
+    pagination:
+      type: "offset"
+      offset_param: "sysparm_offset"
+      limit_param: "sysparm_limit"
+      results_field: "result"
+  
+  get_article:
+    url: "${instance_url}/api/now/table/kb_knowledge/${sys_id}"
+    method: "GET"
+    params:
+      sysparm_display_value: true
+  
+  search:
+    url: "${instance_url}/api/now/table/kb_knowledge"
+    method: "GET"
+    params:
+      sysparm_query: "textLIKE${query}"
+      sysparm_display_value: true
+      sysparm_limit: 50
+  
+  list_catalog_items:
+    url: "${instance_url}/api/sn_sc/servicecatalog/items"
+    method: "GET"
+  
+  list_kb_categories:
+    url: "${instance_url}/api/now/table/kb_category"
+    method: "GET"
+
+mapping:
+  id: "$.sys_id"
+  title: "$.short_description"
+  content: "$.text"
+  content_type: "html"
+  url: "${instance_url}/kb_view.do?sysparm_article=${$.number}"
+  author: "$.author.display_value"
+  modified: "$.sys_updated_on"
+  created: "$.sys_created_on"
+  document_type: "kb_article"
+  attributes:
+    number: "$.number"
+    category: "$.kb_category.display_value"
+    knowledge_base: "$.kb_knowledge_base.display_value"
+    view_count: "$.sys_view_count"
+    rating: "$.rating"
+    workflow_state: "$.workflow_state"
+
+rate_limit:
+  requests_per_minute: 500
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - knowledge_base_filter
+  - category_filter
+  - permissions
+  - attachments
+
+content_types:
+  - kb_knowledge
+  - sc_cat_item
+  - kb_use
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      preserve_tables: true
+      preserve_lists: true
+
+docs_url: "https://developer.servicenow.com/dev.do#!/reference/api/tokyo/rest"

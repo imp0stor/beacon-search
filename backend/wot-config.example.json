@@ -1,0 +1,9 @@
+{
+  "wot": {
+    "enabled": true,
+    "provider": "nostrmaxi",
+    "nostrmaxi_url": "http://localhost:3000",
+    "weight": 1.0,
+    "cache_ttl": 3600
+  }
+}

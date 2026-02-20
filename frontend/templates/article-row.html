@@ -1,0 +1,125 @@
+<!--
+  Article Row Template
+  Used in List View - displays documents as compact rows with metadata
+  
+  Variables:
+  - {{id}} - Document ID
+  - {{title}} - Document title
+  - {{icon}} - Icon based on document type
+  - {{author}} - Author name (optional)
+  - {{date}} - Created/modified date
+  - {{type}} - Document type
+  - {{isFavorite}} - Boolean for favorite status
+-->
+
+<div
+  class="article-row {{#if isFavorite}}favorite{{/if}}"
+  data-id="{{id}}"
+  draggable="true"
+>
+  <!-- Type icon -->
+  <span class="row-icon">{{icon}}</span>
+  
+  <!-- Main content -->
+  <div class="row-content">
+    <h4 class="row-title">{{title}}</h4>
+    <div class="row-meta">
+      {{#if author}}
+      <span class="meta-author">{{author}}</span>
+      {{/if}}
+      
+      {{#if date}}
+      <span class="meta-date">{{date}}</span>
+      {{/if}}
+      
+      {{#if type}}
+      <span class="meta-type">{{type}}</span>
+      {{/if}}
+    </div>
+  </div>
+  
+  <!-- Favorite button -->
+  <button class="favorite-btn {{#if isFavorite}}active{{/if}}">
+    {{#if isFavorite}}★{{else}}☆{{/if}}
+  </button>
+</div>
+
+<style>
+.article-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.article-row:hover {
+  background: var(--bg-tertiary, #334155);
+  border-color: var(--accent-primary, #6366f1);
+  transform: translateX(4px);
+}
+
+.article-row.favorite {
+  border-left: 3px solid #fbbf24;
+}
+
+.row-icon {
+  font-size: 1.25rem;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+.favorite-btn {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.favorite-btn:hover,
+.favorite-btn.active {
+  color: #fbbf24;
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+</style>
+
+<!--
+  Usage Notes:
+  - List view is optimal for scanning many items quickly
+  - Compact design prioritizes title visibility
+  - Favorite status shown with gold left border
+  - Metadata displayed inline for quick reference
+  - Hover state shifts row right for selection feedback
+-->

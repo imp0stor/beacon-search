@@ -1,0 +1,114 @@
+# Discourse Integration Template
+name: "Discourse"
+type: "rest"
+description: "Discourse forum topics and posts"
+icon: "discourse"
+category: "forum"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "base_url"
+      label: "Discourse URL"
+      type: "url"
+      required: true
+      placeholder: "https://forum.example.com"
+    - name: "api_key"
+      label: "API Key"
+      type: "password"
+      required: true
+    - name: "api_username"
+      label: "API Username"
+      type: "text"
+      required: true
+      default: "system"
+      help: "Usually 'system' for admin access"
+  headers:
+    Api-Key: "${api_key}"
+    Api-Username: "${api_username}"
+
+endpoints:
+  list_topics:
+    url: "${base_url}/latest.json"
+    method: "GET"
+    pagination:
+      type: "page"
+      page_param: "page"
+      results_field: "topic_list.topics"
+  
+  get_topic:
+    url: "${base_url}/t/${id}.json"
+    method: "GET"
+  
+  list_categories:
+    url: "${base_url}/categories.json"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/search.json"
+    method: "GET"
+    params:
+      q: "${query}"
+  
+  recent_posts:
+    url: "${base_url}/posts.json"
+    method: "GET"
+
+mapping:
+  topic:
+    id: "$.id"
+    title: "$.title"
+    content: "$.post_stream.posts[0].cooked"
+    content_type: "html"
+    url: "${base_url}/t/${$.slug}/${$.id}"
+    author: "$.post_stream.posts[0].username"
+    modified: "$.last_posted_at"
+    created: "$.created_at"
+    document_type: "topic"
+    attributes:
+      category: "$.category_id"
+      views: "$.views"
+      reply_count: "$.reply_count"
+      like_count: "$.like_count"
+      pinned: "$.pinned"
+      solved: "$.accepted_answer"
+      tags: "$.tags"
+  
+  post:
+    id: "$.id"
+    title: "Re: ${topic_title}"
+    content: "$.cooked"
+    content_type: "html"
+    url: "${base_url}/t/${topic_slug}/${topic_id}/${$.post_number}"
+    author: "$.username"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "post"
+
+rate_limit:
+  requests_per_minute: 60
+  concurrent: 3
+
+features:
+  - incremental_sync
+  - webhooks
+  - category_filter
+  - solved_topics
+  - tags
+
+content_types:
+  - topics
+  - posts
+
+webhook_events:
+  - "topic_created"
+  - "topic_edited"
+  - "post_created"
+  - "post_edited"
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      preserve_code_blocks: true
+
+docs_url: "https://docs.discourse.org/"

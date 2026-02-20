@@ -1,0 +1,100 @@
+# HubSpot Integration Template
+name: "HubSpot"
+type: "rest"
+description: "HubSpot Knowledge Base and CRM content"
+icon: "hubspot"
+category: "crm"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://app.hubspot.com/oauth/authorize"
+    token: "https://api.hubapi.com/oauth/v1/token"
+  scopes:
+    - "content"
+    - "crm.objects.contacts.read"
+
+endpoints:
+  list_kb_articles:
+    url: "https://api.hubapi.com/cms/v3/blogs/posts"
+    method: "GET"
+    params:
+      limit: 100
+      state: "PUBLISHED"
+    pagination:
+      type: "cursor"
+      next_field: "paging.next.after"
+      results_field: "results"
+  
+  get_article:
+    url: "https://api.hubapi.com/cms/v3/blogs/posts/${id}"
+    method: "GET"
+  
+  list_pages:
+    url: "https://api.hubapi.com/cms/v3/pages/site-pages"
+    method: "GET"
+    params:
+      limit: 100
+      state: "PUBLISHED"
+  
+  search:
+    url: "https://api.hubapi.com/cms/v3/blogs/posts/search"
+    method: "GET"
+    params:
+      q: "${query}"
+      limit: 50
+
+mapping:
+  id: "$.id"
+  title: "$.name"
+  content: "$.postBody"
+  content_type: "html"
+  url: "$.url"
+  author: "$.authorName"
+  modified: "$.updated"
+  created: "$.created"
+  document_type: "blog_post"
+  attributes:
+    slug: "$.slug"
+    state: "$.state"
+    blog_author: "$.blogAuthor.displayName"
+    meta_description: "$.metaDescription"
+    tags: "$.tagIds"
+    featured_image: "$.featuredImage"
+
+rate_limit:
+  requests_per_second: 10
+  daily_limit: 250000
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - blog_filter
+  - published_only
+
+content_types:
+  - blog_posts
+  - site_pages
+  - landing_pages
+
+webhook_events:
+  - "content.published"
+  - "content.updated"
+  - "content.deleted"
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      strip_hubl: true
+
+docs_url: "https://developers.hubspot.com/docs/api/cms/blogs"

@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "noImplicitAny": false
+  },
+  "include": [
+    "src/index.ts",
+    "src/types.d.ts",
+    "src/connectors/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/nlp",
+    "src/routes",
+    "src/processors"
+  ]
+}

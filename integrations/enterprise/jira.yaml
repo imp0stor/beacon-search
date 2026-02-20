@@ -1,0 +1,114 @@
+# Atlassian Jira Integration Template
+name: "Jira"
+type: "rest"
+description: "Jira issues, projects, and comments"
+icon: "jira"
+category: "project-management"
+
+auth:
+  type: "basic"
+  fields:
+    - name: "base_url"
+      label: "Jira URL"
+      type: "url"
+      required: true
+      placeholder: "https://company.atlassian.net"
+    - name: "email"
+      label: "Email"
+      type: "email"
+      required: true
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at https://id.atlassian.com/manage-profile/security/api-tokens"
+
+endpoints:
+  search:
+    url: "${base_url}/rest/api/3/search"
+    method: "GET"
+    params:
+      jql: "ORDER BY updated DESC"
+      maxResults: 100
+      expand: "renderedFields,names"
+      fields: "summary,description,status,assignee,reporter,created,updated,project,issuetype,priority,labels,comment"
+    pagination:
+      type: "offset"
+      offset_param: "startAt"
+      limit_param: "maxResults"
+      results_field: "issues"
+      total_field: "total"
+  
+  get_issue:
+    url: "${base_url}/rest/api/3/issue/${issue_key}"
+    method: "GET"
+    params:
+      expand: "renderedFields,changelog"
+  
+  list_projects:
+    url: "${base_url}/rest/api/3/project"
+    method: "GET"
+  
+  jql_search:
+    url: "${base_url}/rest/api/3/search"
+    method: "POST"
+    body:
+      jql: "${query}"
+      maxResults: 100
+
+mapping:
+  id: "$.key"
+  title: "$.fields.summary"
+  content: "$.renderedFields.description"
+  content_type: "html"
+  url: "${base_url}/browse/${$.key}"
+  author: "$.fields.reporter.displayName"
+  modified: "$.fields.updated"
+  created: "$.fields.created"
+  document_type: "issue"
+  attributes:
+    project: "$.fields.project.name"
+    project_key: "$.fields.project.key"
+    issue_type: "$.fields.issuetype.name"
+    status: "$.fields.status.name"
+    priority: "$.fields.priority.name"
+    assignee: "$.fields.assignee.displayName"
+    labels: "$.fields.labels"
+    resolution: "$.fields.resolution.name"
+
+jql_presets:
+  recent_updates: "updated >= -7d ORDER BY updated DESC"
+  my_issues: "assignee = currentUser() ORDER BY updated DESC"
+  open_issues: "resolution = Unresolved ORDER BY priority DESC"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - project_filter
+  - jql_filter
+  - comments
+  - attachments
+  - worklogs
+
+content_types:
+  - issues
+  - comments
+  - attachments
+
+webhook_events:
+  - "jira:issue_created"
+  - "jira:issue_updated"
+  - "jira:issue_deleted"
+  - "comment_created"
+  - "comment_updated"
+
+content_processors:
+  - name: "adf_to_text"
+    config:
+      version: "atlassian_document_format"
+
+docs_url: "https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/"

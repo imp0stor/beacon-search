@@ -1,0 +1,97 @@
+# Mattermost Integration Template
+name: "Mattermost"
+type: "rest"
+description: "Mattermost team messaging channels and messages"
+icon: "mattermost"
+category: "messaging"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Mattermost URL"
+      type: "url"
+      required: true
+      placeholder: "https://mattermost.example.com"
+    - name: "access_token"
+      label: "Personal Access Token"
+      type: "password"
+      required: true
+      help: "Generate at Account Settings > Security > Personal Access Tokens"
+  headers:
+    Authorization: "Bearer ${access_token}"
+
+endpoints:
+  list_teams:
+    url: "${base_url}/api/v4/teams"
+    method: "GET"
+  
+  list_channels:
+    url: "${base_url}/api/v4/teams/${team_id}/channels"
+    method: "GET"
+  
+  list_posts:
+    url: "${base_url}/api/v4/channels/${channel_id}/posts"
+    method: "GET"
+    params:
+      per_page: 200
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "per_page"
+      results_field: "posts"
+  
+  get_post:
+    url: "${base_url}/api/v4/posts/${id}"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/api/v4/teams/${team_id}/posts/search"
+    method: "POST"
+    body:
+      terms: "${query}"
+      is_or_search: true
+
+mapping:
+  id: "$.id"
+  title: "Message in ${channel_name}"
+  content: "$.message"
+  content_type: "markdown"
+  url: "${base_url}/${team_name}/pl/${$.id}"
+  author: "$.user_id"
+  modified: "$.update_at"
+  created: "$.create_at"
+  document_type: "message"
+  attributes:
+    channel_id: "$.channel_id"
+    root_id: "$.root_id"
+    type: "$.type"
+    file_ids: "$.file_ids"
+    has_reactions: "$.has_reactions"
+
+rate_limit:
+  requests_per_minute: 600
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - websocket_realtime
+  - team_filter
+  - channel_filter
+  - thread_support
+  - file_attachments
+
+content_types:
+  - messages
+  - threads
+  - pinned_posts
+
+realtime:
+  type: "websocket"
+  url: "${base_url}/api/v4/websocket"
+  events:
+    - "posted"
+    - "post_edited"
+    - "post_deleted"
+
+docs_url: "https://api.mattermost.com/"

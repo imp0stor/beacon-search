@@ -1,0 +1,318 @@
+version: '3.8'
+
+# =============================================================================
+# Beacon Search - Production Deployment
+# =============================================================================
+# 
+# Components:
+#   - PostgreSQL 16 with pgvector for document storage and vector search
+#   - Typesense for fast full-text search (optional, hybrid mode)
+#   - Redis for caching and session management
+#   - Backend API (Node.js/Express)
+#   - Frontend (React, served via Caddy)
+#   - Caddy as reverse proxy with automatic HTTPS
+#
+# Usage:
+#   1. Copy .env.example to .env and configure
+#   2. docker-compose -f docker-compose.prod.yml up -d
+#   3. Run ./scripts/deploy.sh for initialization
+#
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # DATABASE - PostgreSQL with pgvector
+  # ===========================================================================
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: beacon-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-beacon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-beacon_search}
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beacon} -d ${POSTGRES_DB:-beacon_search}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - beacon-internal
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+        reservations:
+          memory: 512M
+    # PostgreSQL performance configuration
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=16MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+      -c log_min_duration_statement=1000
+      -c log_checkpoints=on
+      -c log_connections=on
+      -c log_disconnections=on
+
+  # ===========================================================================
+  # TYPESENSE - Fast full-text search (optional)
+  # ===========================================================================
+  typesense:
+    image: typesense/typesense:0.25.2
+    container_name: beacon-typesense
+    restart: always
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-beacon_typesense_key}
+      TYPESENSE_DATA_DIR: /data
+      TYPESENSE_ENABLE_CORS: "true"
+    volumes:
+      - typesense_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8108/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - beacon-internal
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+    profiles:
+      - typesense  # Only start with --profile typesense
+
+  # ===========================================================================
+  # REDIS - Caching and queues
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: beacon-redis
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - beacon-internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+
+  # ===========================================================================
+  # BACKEND - Node.js API
+  # ===========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: beacon-backend
+    restart: always
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-beacon}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-beacon_search}
+      
+      # Server
+      PORT: 3001
+      NODE_ENV: production
+      
+      # Redis
+      REDIS_URL: redis://redis:6379
+      
+      # Typesense (optional)
+      TYPESENSE_HOST: typesense
+      TYPESENSE_PORT: 8108
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-beacon_typesense_key}
+      TYPESENSE_ENABLED: ${TYPESENSE_ENABLED:-false}
+      
+      # AI / OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      
+      # Processing features
+      ENABLE_OCR: ${ENABLE_OCR:-true}
+      ENABLE_TRANSLATION: ${ENABLE_TRANSLATION:-false}
+      ENABLE_AI_DESCRIPTION: ${ENABLE_AI_DESCRIPTION:-false}
+      
+      # Config repo path
+      CONFIG_REPO_PATH: /app/config-repo
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ./config-repo:/app/config-repo:ro
+      - ./integrations:/app/integrations:ro
+      - backend_cache:/tmp/transformers-cache
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Embedding model takes time to load
+    networks:
+      - beacon-internal
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
+          memory: 2G
+          cpus: '1'
+
+  # ===========================================================================
+  # FRONTEND - React app (built into nginx/caddy)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
+        NODE_ENV: production
+    container_name: beacon-frontend
+    restart: always
+    networks:
+      - beacon-internal
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # ===========================================================================
+  # CADDY - Reverse proxy with automatic HTTPS
+  # ===========================================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: beacon-caddy
+    restart: always
+    ports:
+      - "8090:80"
+      - "8490:443"
+      - "8490:443/udp"  # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      BACKEND_HOST: backend:3001
+      FRONTEND_HOST: frontend:80
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - beacon-internal
+      - beacon-external
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # ===========================================================================
+  # BACKUP - Automated database backups (optional)
+  # ===========================================================================
+  backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: beacon-backup
+    restart: always
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-beacon_search}
+      POSTGRES_USER: ${POSTGRES_USER:-beacon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "0 2 * * *"  # Daily at 2 AM
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - beacon-internal
+    profiles:
+      - backup  # Only start with --profile backup
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  pgdata:
+    driver: local
+  typesense_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_cache:
+    driver: local
+  uploads:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  beacon-internal:
+    driver: bridge
+    internal: true  # No external access
+  beacon-external:
+    driver: bridge

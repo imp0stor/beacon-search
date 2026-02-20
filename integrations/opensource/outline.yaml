@@ -1,0 +1,93 @@
+# Outline Integration Template
+name: "Outline"
+type: "rest"
+description: "Outline knowledge base documents and collections"
+icon: "outline"
+category: "wiki"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Outline URL"
+      type: "url"
+      required: true
+      placeholder: "https://app.getoutline.com"
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at Settings > API Tokens"
+  headers:
+    Authorization: "Bearer ${api_token}"
+    Content-Type: "application/json"
+
+endpoints:
+  list:
+    url: "${base_url}/api/documents.list"
+    method: "POST"
+    body:
+      limit: 100
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "limit"
+      results_field: "data"
+  
+  get:
+    url: "${base_url}/api/documents.info"
+    method: "POST"
+    body:
+      id: "${id}"
+  
+  search:
+    url: "${base_url}/api/documents.search"
+    method: "POST"
+    body:
+      query: "${query}"
+      limit: 50
+  
+  list_collections:
+    url: "${base_url}/api/collections.list"
+    method: "POST"
+  
+  export:
+    url: "${base_url}/api/documents.export"
+    method: "POST"
+    body:
+      id: "${id}"
+
+mapping:
+  id: "$.id"
+  title: "$.title"
+  content: "$.text"
+  content_type: "markdown"
+  url: "$.url"
+  author: "$.createdBy.name"
+  modified: "$.updatedAt"
+  created: "$.createdAt"
+  attributes:
+    collection: "$.collection.name"
+    collection_id: "$.collectionId"
+    published: "$.publishedAt"
+    archived: "$.archivedAt"
+    template: "$.template"
+
+rate_limit:
+  requests_per_minute: 120
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - permissions
+  - collections_filter
+  - templates
+
+webhook_events:
+  - "documents.create"
+  - "documents.update"
+  - "documents.delete"
+  - "documents.publish"
+
+docs_url: "https://www.getoutline.com/developers"

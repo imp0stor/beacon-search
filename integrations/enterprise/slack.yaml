@@ -1,0 +1,130 @@
+# Slack Integration Template
+name: "Slack"
+type: "rest"
+description: "Slack messages, channels, and canvases"
+icon: "slack"
+category: "messaging"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://slack.com/oauth/v2/authorize"
+    token: "https://slack.com/api/oauth.v2.access"
+  scopes:
+    - "channels:history"
+    - "channels:read"
+    - "groups:history"
+    - "groups:read"
+    - "search:read"
+
+endpoints:
+  list_channels:
+    url: "https://slack.com/api/conversations.list"
+    method: "GET"
+    params:
+      types: "public_channel,private_channel"
+      limit: 1000
+    pagination:
+      type: "cursor"
+      cursor_param: "cursor"
+      next_field: "response_metadata.next_cursor"
+      results_field: "channels"
+  
+  list_messages:
+    url: "https://slack.com/api/conversations.history"
+    method: "GET"
+    params:
+      channel: "${channel_id}"
+      limit: 200
+    pagination:
+      type: "cursor"
+      cursor_param: "cursor"
+      next_field: "response_metadata.next_cursor"
+      results_field: "messages"
+  
+  get_thread:
+    url: "https://slack.com/api/conversations.replies"
+    method: "GET"
+    params:
+      channel: "${channel_id}"
+      ts: "${thread_ts}"
+  
+  search:
+    url: "https://slack.com/api/search.messages"
+    method: "GET"
+    params:
+      query: "${query}"
+      count: 100
+  
+  get_user:
+    url: "https://slack.com/api/users.info"
+    method: "GET"
+    params:
+      user: "${user_id}"
+
+mapping:
+  id: "$.ts"
+  title: "Message in ${channel_name}"
+  content: "$.text"
+  content_type: "mrkdwn"
+  url: "https://slack.com/archives/${channel_id}/p${$.ts}"
+  author: "$.user"
+  modified: "$.edited.ts"
+  created: "$.ts"
+  document_type: "message"
+  attributes:
+    channel_id: "${channel_id}"
+    thread_ts: "$.thread_ts"
+    reply_count: "$.reply_count"
+    reactions: "$.reactions"
+    files: "$.files"
+    pinned: "$.pinned_to"
+
+rate_limit:
+  requests_per_minute: 50
+  burst: 1
+  tier_limits:
+    tier_1: 1
+    tier_2: 20
+    tier_3: 50
+    tier_4: 100
+  concurrent: 1
+
+features:
+  - incremental_sync
+  - events_api
+  - channel_filter
+  - thread_support
+  - file_attachments
+  - reactions
+
+content_types:
+  - messages
+  - threads
+  - canvases
+  - files
+
+events_api:
+  events:
+    - "message"
+    - "message.channels"
+    - "message.groups"
+    - "message.im"
+    - "pin_added"
+
+content_processors:
+  - name: "slack_mrkdwn_to_text"
+    config:
+      resolve_user_mentions: true
+      resolve_channel_mentions: true
+
+docs_url: "https://api.slack.com/methods"

@@ -1,0 +1,110 @@
+# ERPNext Integration Template
+name: "ERPNext"
+type: "rest"
+description: "ERPNext ERP documents and wiki"
+icon: "erpnext"
+category: "erp"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "base_url"
+      label: "ERPNext URL"
+      type: "url"
+      required: true
+      placeholder: "https://erp.example.com"
+    - name: "api_key"
+      label: "API Key"
+      type: "text"
+      required: true
+    - name: "api_secret"
+      label: "API Secret"
+      type: "password"
+      required: true
+      help: "Generate at Settings > My Settings > API Access"
+  headers:
+    Authorization: "token ${api_key}:${api_secret}"
+
+endpoints:
+  list_documents:
+    url: "${base_url}/api/resource/${doctype}"
+    method: "GET"
+    params:
+      limit_page_length: 100
+      limit_start: 0
+      fields: '["*"]'
+    pagination:
+      type: "offset"
+      offset_param: "limit_start"
+      limit_param: "limit_page_length"
+      results_field: "data"
+  
+  get_document:
+    url: "${base_url}/api/resource/${doctype}/${name}"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/api/method/frappe.utils.global_search.search"
+    method: "GET"
+    params:
+      text: "${query}"
+      start: 0
+      limit: 50
+  
+  list_doctypes:
+    url: "${base_url}/api/resource/DocType"
+    method: "GET"
+    params:
+      filters: '[["issingle", "=", 0], ["istable", "=", 0]]'
+
+doctypes:
+  - name: "Wiki Page"
+    display: "Wiki Pages"
+    content_field: "content"
+    title_field: "title"
+  
+  - name: "Knowledge Base Article"
+    display: "KB Articles"
+    content_field: "content"
+    title_field: "title"
+  
+  - name: "Note"
+    display: "Notes"
+    content_field: "content"
+    title_field: "title"
+  
+  - name: "ToDo"
+    display: "Tasks"
+    content_field: "description"
+    title_field: "description"
+
+mapping:
+  id: "$.name"
+  title: "$.title"
+  content: "$.content"
+  content_type: "html"
+  url: "${base_url}/app/${doctype}/${$.name}"
+  author: "$.owner"
+  modified: "$.modified"
+  created: "$.creation"
+  document_type: "${doctype}"
+  attributes:
+    doctype: "$.doctype"
+    status: "$.status"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - doctype_filter
+  - custom_fields
+  - webhooks
+
+webhook_events:
+  - "on_update"
+  - "after_insert"
+  - "on_trash"
+
+docs_url: "https://frappeframework.com/docs/user/en/api"
