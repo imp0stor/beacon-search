@@ -1,0 +1,42 @@
+:root {
+  /* Surfaces (dark navy progression) */
+  --ui-bg: #0b1020;
+  --ui-surface: #121a2b;
+  --ui-surface-2: #151f33;
+  --ui-surface-3: #1b2540;
+  --ui-surface-hover: #1e2a48;
+  --ui-surface-active: #243054;
+
+  /* Borders */
+  --ui-border: rgba(148, 163, 184, 0.16);
+  --ui-border-strong: rgba(148, 163, 184, 0.3);
+  --ui-border-focus: rgba(139, 92, 246, 0.6);
+
+  /* Text hierarchy */
+  --ui-text: #f8fafc;
+  --ui-text-secondary: #e2e8f0;
+  --ui-muted: #94a3b8;
+  --ui-muted-2: #64748b;
+  --ui-muted-3: #475569;
+
+  /* Primary accent (purple) */
+  --ui-accent: #8b5cf6;
+  --ui-accent-hover: #a78bfa;
+  --ui-accent-2: #c084fc;
+  --ui-accent-3: #6d28d9;
+  --ui-gradient: linear-gradient(90deg, #7c3aed 0%, #a855f7 45%, #c084fc 100%);
+
+  /* Status semantics */
+  --ui-success: #22c55e;
+  --ui-success-bg: rgba(34, 197, 94, 0.15);
+  --ui-warning: #f59e0b;
+  --ui-warning-bg: rgba(245, 158, 11, 0.18);
+  --ui-danger: #ef4444;
+  --ui-danger-bg: rgba(239, 68, 68, 0.18);
+  --ui-info: #38bdf8;
+  --ui-info-bg: rgba(56, 189, 248, 0.18);
+
+  /* Overlay */
+  --ui-overlay: rgba(11, 16, 32, 0.8);
+  --ui-scrim: rgba(11, 16, 32, 0.6);
+}

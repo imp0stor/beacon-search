@@ -1,0 +1,116 @@
+# BookStack Integration Template
+name: "BookStack"
+type: "rest"
+description: "BookStack documentation platform - books, chapters, and pages"
+icon: "bookstack"
+category: "wiki"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "base_url"
+      label: "BookStack URL"
+      type: "url"
+      required: true
+      placeholder: "https://docs.example.com"
+    - name: "token_id"
+      label: "Token ID"
+      type: "text"
+      required: true
+    - name: "token_secret"
+      label: "Token Secret"
+      type: "password"
+      required: true
+      help: "Generate at Settings > API Tokens"
+  headers:
+    Authorization: "Token ${token_id}:${token_secret}"
+
+endpoints:
+  list_books:
+    url: "${base_url}/api/books"
+    method: "GET"
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "count"
+      results_field: "data"
+  
+  list_chapters:
+    url: "${base_url}/api/chapters"
+    method: "GET"
+    params:
+      filter[book_id]: "${book_id}"
+  
+  list_pages:
+    url: "${base_url}/api/pages"
+    method: "GET"
+    pagination:
+      type: "offset"
+      offset_param: "offset"
+      limit_param: "count"
+      results_field: "data"
+  
+  get_page:
+    url: "${base_url}/api/pages/${id}"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/api/search"
+    method: "GET"
+    params:
+      query: "${query}"
+      count: 50
+
+mapping:
+  page:
+    id: "$.id"
+    title: "$.name"
+    content: "$.html"
+    content_type: "html"
+    url: "${base_url}/books/${$.book_slug}/page/${$.slug}"
+    author: "$.created_by.name"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "page"
+    attributes:
+      book: "$.book.name"
+      chapter: "$.chapter.name"
+      priority: "$.priority"
+      draft: "$.draft"
+  
+  book:
+    id: "$.id"
+    title: "$.name"
+    content: "$.description"
+    url: "${base_url}/books/${$.slug}"
+    document_type: "book"
+  
+  chapter:
+    id: "$.id"
+    title: "$.name"
+    content: "$.description"
+    url: "${base_url}/books/${$.book_slug}/chapter/${$.slug}"
+    document_type: "chapter"
+
+rate_limit:
+  requests_per_minute: 180
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - book_filter
+  - chapter_filter
+  - permissions
+
+content_types:
+  - pages
+  - books
+  - chapters
+  - shelves
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      preserve_links: true
+
+docs_url: "https://demo.bookstackapp.com/api/docs"

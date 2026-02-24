@@ -1,0 +1,102 @@
+/* Button Primitives */
+
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--ui-font);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  cursor: pointer;
+  transition: var(--transition-all);
+  white-space: nowrap;
+}
+
+.ui-button:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+
+.ui-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* CTA variant (primary action) */
+.ui-cta {
+  background: var(--ui-gradient);
+  color: var(--ui-text);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-cta);
+  transition: transform var(--duration-normal) var(--ease-spring),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.ui-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-cta-hover);
+}
+
+.ui-cta:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary variant */
+.ui-button--secondary {
+  background: rgba(139, 92, 246, 0.18);
+  color: var(--ui-text);
+  border: 1px solid transparent;
+}
+
+.ui-button--secondary:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.25);
+}
+
+/* Ghost variant */
+.ui-button--ghost {
+  background: transparent;
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border-strong);
+}
+
+.ui-button--ghost:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-accent);
+}
+
+/* Danger variant */
+.ui-button--danger {
+  background: var(--ui-danger-bg);
+  color: var(--ui-danger);
+  border: 1px solid var(--ui-danger);
+}
+
+.ui-button--danger:hover:not(:disabled) {
+  background: var(--ui-danger);
+  color: var(--ui-text);
+}
+
+/* Icon button (square) */
+.ui-button--icon {
+  padding: var(--space-3);
+  aspect-ratio: 1;
+}
+
+/* Small size */
+.ui-button--sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* Large size */
+.ui-button--lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-md);
+}

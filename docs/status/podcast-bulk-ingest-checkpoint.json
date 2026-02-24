@@ -1,0 +1,28 @@
+{
+  "startedAt": "2026-02-16T19:30:18.962Z",
+  "updatedAt": "2026-02-16T19:31:03.189Z",
+  "options": {
+    "seedFile": "../docs/podcasts/seed-sources-2026-02-16.json",
+    "batchSize": 5,
+    "maxEpisodes": 3,
+    "maxSources": 6,
+    "maxRetries": 2,
+    "sleepMs": 500,
+    "chunkSize": 1200,
+    "chunkOverlap": 200,
+    "maxTranscriptions": 2,
+    "maxTranscriptionsPerSource": 1,
+    "transcribeMissing": true,
+    "forceReindex": false
+  },
+  "totals": {
+    "sourcesTotal": 6,
+    "sourcesCompleted": 0,
+    "sourcesFailed": 0,
+    "episodesDiscovered": 0,
+    "episodesUpdated": 0,
+    "transcriptsCreated": 0,
+    "transcriptsTranscribed": 0
+  },
+  "sources": {}
+}

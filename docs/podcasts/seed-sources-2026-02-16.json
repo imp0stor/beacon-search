@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-02-16T19:30:00Z",
+  "notes": "Seed list curated from notable public podcast directories/feeds with accessible RSS endpoints. Focused on high-signal journalism, economics, technology, and culture shows with consistent publishing cadence.",
+  "sources": [
+    {
+      "title": "Up First (NPR)",
+      "rssUrl": "https://feeds.npr.org/510318/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510318/up-first",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Daily news briefing with high topical coverage; NPR publishes a stable RSS feed with structured metadata."
+    },
+    {
+      "title": "Planet Money (NPR)",
+      "rssUrl": "https://feeds.npr.org/510289/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510289/planet-money",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Economics and business explainers; consistent production quality and rich summaries."
+    },
+    {
+      "title": "The Indicator from Planet Money (NPR)",
+      "rssUrl": "https://feeds.npr.org/510325/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510325/the-indicator-from-planet-money",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Short-form economy coverage; frequent episodes for dense indexing."
+    },
+    {
+      "title": "Code Switch (NPR)",
+      "rssUrl": "https://feeds.npr.org/510312/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510312/codeswitch",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Race/culture reporting with high editorial quality; good metadata and summaries."
+    },
+    {
+      "title": "Hidden Brain (NPR)",
+      "rssUrl": "https://feeds.npr.org/510308/podcast.xml",
+      "siteUrl": "https://hiddenbrain.org/",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Behavioral science interviews; high listener demand and evergreen topics."
+    },
+    {
+      "title": "Invisibilia (NPR)",
+      "rssUrl": "https://feeds.npr.org/510307/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510307/invisibilia",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Narrative science/psychology reporting; evergreen episodes and strong descriptions."
+    },
+    {
+      "title": "TED Radio Hour (NPR)",
+      "rssUrl": "https://feeds.npr.org/510298/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510298/ted-radio-hour",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Curated TED talks with themes; good transcripts on TED side and structured show notes."
+    },
+    {
+      "title": "Tiny Desk Concerts - Audio (NPR)",
+      "rssUrl": "https://feeds.npr.org/510306/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510306/tiny-desk-concerts-audio",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Music performances with consistent publishing cadence; attractive for media search demos."
+    },
+    {
+      "title": "It’s Been a Minute (NPR)",
+      "rssUrl": "https://feeds.npr.org/510317/podcast.xml",
+      "siteUrl": "https://www.npr.org/podcasts/510317/its-been-a-minute",
+      "directory": "NPR Podcast Directory",
+      "rationale": "Culture commentary; high topical diversity for entity extraction."
+    },
+    {
+      "title": "The Daily (The New York Times)",
+      "rssUrl": "https://feeds.simplecast.com/54nAGcIl",
+      "siteUrl": "https://www.nytimes.com/column/the-daily",
+      "directory": "NYTimes public RSS feed (Simplecast)",
+      "rationale": "Flagship daily news podcast with rich summaries and broad coverage."
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+# =============================================================================
+# Beacon Search - Caddy Configuration
+# =============================================================================
+#
+# Automatic HTTPS with Let's Encrypt
+# Reverse proxy for API and frontend
+#
+# Environment variables (set in docker-compose):
+#   - DOMAIN: Your domain (e.g., beacon.example.com)
+#   - BACKEND_HOST: Backend service (default: backend:3001)
+#   - FRONTEND_HOST: Frontend service (default: frontend:80)
+#
+# =============================================================================
+
+# Global options
+{
+	# Email for Let's Encrypt notifications
+	email {$ACME_EMAIL:admin@example.com}
+	
+	# Staging CA for testing (comment out for production)
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+	
+	# HTTP/3 disabled (unsupported option in current Caddy build)
+}
+
+# Main site
+:80 {
+	# Logging
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+	
+	# Security headers
+	header {
+		# HSTS
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# Prevent clickjacking
+		X-Frame-Options "SAMEORIGIN"
+		# XSS protection
+		X-Content-Type-Options "nosniff"
+		X-XSS-Protection "1; mode=block"
+		# Referrer policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Remove server header
+		-Server
+	}
+	
+	# Health check endpoint (for load balancers)
+	handle /health {
+		respond "OK" 200
+	}
+	
+	# API routes -> Backend
+	handle /api/* {
+		reverse_proxy {$BACKEND_HOST:backend:3001} {
+			# Load balancing (for multiple backend instances)
+			lb_policy round_robin
+			
+			# Health checks
+			health_uri /health
+			health_interval 30s
+			health_timeout 10s
+			
+			# Headers
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			
+			# Timeouts
+			transport http {
+				read_timeout 120s
+				write_timeout 120s
+			}
+		}
+	}
+	
+	# Webhook routes -> Backend
+	handle /webhooks/* {
+		reverse_proxy {$BACKEND_HOST:backend:3001} {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+	
+	# Frontend (everything else)
+	handle {
+		reverse_proxy {$FRONTEND_HOST:frontend:80} {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+	
+	# Compression
+	encode gzip zstd
+}
+
+# www redirect disabled in local-only mode
+
+# Metrics endpoint (optional, for monitoring)
+:9090 {
+	metrics /metrics
+}

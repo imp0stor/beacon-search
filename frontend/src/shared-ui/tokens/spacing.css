@@ -1,0 +1,14 @@
+:root {
+  /* Spacing scale (8px base) */
+  --space-0: 0;
+  --space-1: 4px;   /* Micro */
+  --space-2: 8px;   /* Base */
+  --space-3: 12px;  /* Tight */
+  --space-4: 16px;  /* Default */
+  --space-5: 20px;  /* Comfortable */
+  --space-6: 24px;  /* Section */
+  --space-8: 32px;  /* Large section */
+  --space-10: 40px; /* Page section */
+  --space-12: 48px; /* Major section */
+  --space-16: 64px; /* Page margin */
+}

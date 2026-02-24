@@ -1,0 +1,95 @@
+# DokuWiki Integration Template
+name: "DokuWiki"
+type: "rest"
+description: "DokuWiki pages and namespaces"
+icon: "dokuwiki"
+category: "wiki"
+
+auth:
+  type: "basic"
+  fields:
+    - name: "base_url"
+      label: "DokuWiki URL"
+      type: "url"
+      required: true
+      placeholder: "https://wiki.example.com"
+    - name: "username"
+      label: "Username"
+      type: "text"
+      required: false
+    - name: "password"
+      label: "Password"
+      type: "password"
+      required: false
+
+endpoints:
+  list_pages:
+    url: "${base_url}/lib/exe/xmlrpc.php"
+    method: "POST"
+    type: "xmlrpc"
+    xmlrpc_method: "dokuwiki.getPagelist"
+    params:
+      namespace: ""
+      options:
+        depth: 0
+  
+  get_page:
+    url: "${base_url}/lib/exe/xmlrpc.php"
+    method: "POST"
+    type: "xmlrpc"
+    xmlrpc_method: "wiki.getPage"
+    params:
+      pagename: "${id}"
+  
+  get_page_info:
+    url: "${base_url}/lib/exe/xmlrpc.php"
+    method: "POST"
+    type: "xmlrpc"
+    xmlrpc_method: "wiki.getPageInfo"
+    params:
+      pagename: "${id}"
+  
+  search:
+    url: "${base_url}/lib/exe/xmlrpc.php"
+    method: "POST"
+    type: "xmlrpc"
+    xmlrpc_method: "dokuwiki.search"
+    params:
+      query: "${query}"
+  
+  recent_changes:
+    url: "${base_url}/lib/exe/xmlrpc.php"
+    method: "POST"
+    type: "xmlrpc"
+    xmlrpc_method: "wiki.getRecentChanges"
+    params:
+      timestamp: "${since_timestamp}"
+
+mapping:
+  id: "$.id"
+  title: "$.id"
+  content: "$.content"
+  content_type: "dokuwiki"
+  url: "${base_url}/doku.php?id=${$.id}"
+  author: "$.author"
+  modified: "$.mtime"
+  attributes:
+    size: "$.size"
+    revision: "$.rev"
+
+rate_limit:
+  requests_per_minute: 60
+  concurrent: 3
+
+features:
+  - incremental_sync
+  - namespace_filter
+  - recent_changes
+
+content_processors:
+  - name: "dokuwiki_to_text"
+    config:
+      preserve_links: true
+      strip_plugins: true
+
+docs_url: "https://www.dokuwiki.org/devel:xmlrpc"

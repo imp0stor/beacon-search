@@ -1,0 +1,437 @@
+/* Connectors Modal & Panel */
+.connectors-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.connectors-panel {
+  background: linear-gradient(135deg, #1e293b 0%, #1a1a2e 100%);
+  border: 1px solid #374151;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.connectors-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #374151;
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  z-index: 10;
+}
+
+.connectors-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: #fff;
+}
+
+.connectors-loading {
+  padding: 3rem;
+  text-align: center;
+  color: #9ca3af;
+}
+
+/* Error Display */
+.connectors-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 8px;
+}
+
+.connectors-error button {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* Actions Bar */
+.connectors-actions {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #374151;
+}
+
+.add-connector-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.add-connector-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+/* Connector Form */
+.connector-form {
+  padding: 1.5rem;
+  background: rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid #374151;
+}
+
+.connector-form h3 {
+  margin: 0 0 1.5rem 0;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group input[type="number"] {
+  width: 100%;
+  padding: 0.75rem;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.form-group .hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Type Selector */
+.type-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.type-selector button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-selector button:hover {
+  border-color: #6366f1;
+}
+
+.type-selector button.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-color: transparent;
+  color: white;
+}
+
+/* File Type Selector */
+.file-type-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.file-type-selector button {
+  padding: 0.5rem 0.75rem;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #9ca3af;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.file-type-selector button.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+/* Checkboxes */
+.form-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.form-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #d1d5db;
+  cursor: pointer;
+}
+
+.form-checkboxes input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6366f1;
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+/* Connectors List */
+.connectors-list {
+  padding: 1rem;
+}
+
+.no-connectors {
+  text-align: center;
+  color: #9ca3af;
+  padding: 3rem;
+}
+
+/* Connector Card */
+.connector-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s;
+}
+
+.connector-card:hover {
+  border-color: #6366f1;
+}
+
+.connector-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.connector-type {
+  font-size: 1.5rem;
+}
+
+.connector-header h3 {
+  margin: 0;
+  flex: 1;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.connector-status {
+  font-size: 1.25rem;
+}
+
+.connector-description {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.connector-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.connector-details .detail {
+  font-size: 0.8rem;
+  color: #6b7280;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Progress Bar */
+.connector-progress {
+  margin: 0.75rem 0;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #374151;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.current-item {
+  color: #6366f1;
+  font-family: monospace;
+  font-size: 0.7rem;
+}
+
+/* Connector Actions */
+.connector-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.connector-actions button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.connector-actions button:hover {
+  opacity: 0.8;
+}
+
+.run-btn {
+  background: #10b981;
+  color: white;
+}
+
+.stop-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.edit-btn {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.delete-btn {
+  background: #1f2937;
+  color: #9ca3af;
+}
+
+.delete-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Connector Meta */
+.connector-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #374151;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .connectors-modal {
+    padding: 1rem;
+  }
+  
+  .connectors-panel {
+    max-height: none;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .type-selector {
+    flex-direction: column;
+  }
+  
+  .connector-actions {
+    flex-wrap: wrap;
+  }
+  
+  .connector-actions button {
+    flex: 1;
+  }
+}

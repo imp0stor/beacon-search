@@ -1,0 +1,106 @@
+# Airtable Integration Template
+name: "Airtable"
+type: "rest"
+description: "Airtable bases, tables, and records"
+icon: "airtable"
+category: "database"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://airtable.com/oauth2/v1/authorize"
+    token: "https://airtable.com/oauth2/v1/token"
+  scopes:
+    - "data.records:read"
+    - "schema.bases:read"
+
+endpoints:
+  list_bases:
+    url: "https://api.airtable.com/v0/meta/bases"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "offset"
+  
+  get_base_schema:
+    url: "https://api.airtable.com/v0/meta/bases/${base_id}/tables"
+    method: "GET"
+  
+  list_records:
+    url: "https://api.airtable.com/v0/${base_id}/${table_id}"
+    method: "GET"
+    params:
+      pageSize: 100
+    pagination:
+      type: "cursor"
+      cursor_param: "offset"
+      results_field: "records"
+      next_field: "offset"
+  
+  get_record:
+    url: "https://api.airtable.com/v0/${base_id}/${table_id}/${record_id}"
+    method: "GET"
+
+mapping:
+  id: "$.id"
+  title: "$.fields.Name || $.fields.Title || $.id"
+  content: ""
+  url: "https://airtable.com/${base_id}/${table_id}/${$.id}"
+  modified: "$.createdTime"
+  document_type: "record"
+  attributes:
+    base_id: "${base_id}"
+    table_id: "${table_id}"
+    fields: "$.fields"
+
+dynamic_fields:
+  enabled: true
+  title_fields:
+    - "Name"
+    - "Title"
+    - "name"
+    - "title"
+  content_fields:
+    - "Description"
+    - "Notes"
+    - "Content"
+    - "Body"
+    - "Text"
+  ignore_types:
+    - "attachment"
+    - "barcode"
+    - "button"
+
+rate_limit:
+  requests_per_minute: 100
+  concurrent: 3
+
+features:
+  - incremental_sync
+  - base_filter
+  - table_filter
+  - view_filter
+  - formula_fields
+  - linked_records
+
+content_types:
+  - records
+  - comments
+
+content_processors:
+  - name: "airtable_fields_to_text"
+    config:
+      include_field_names: true
+      join_multiselect: ", "
+      format_dates: "YYYY-MM-DD"
+
+docs_url: "https://airtable.com/developers/web/api/introduction"

@@ -1,0 +1,90 @@
+# Atlassian Confluence Integration Template
+name: "Confluence"
+type: "rest"
+description: "Atlassian Confluence wiki pages, spaces, and blog posts"
+icon: "confluence"
+category: "wiki"
+
+auth:
+  type: "basic"
+  fields:
+    - name: "base_url"
+      label: "Confluence URL"
+      type: "url"
+      required: true
+      placeholder: "https://your-domain.atlassian.net/wiki"
+    - name: "username"
+      label: "Email"
+      type: "email"
+      required: true
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at https://id.atlassian.com/manage-profile/security/api-tokens"
+
+endpoints:
+  list:
+    url: "${base_url}/rest/api/content"
+    method: "GET"
+    params:
+      type: "page"
+      expand: "body.storage,version,space,history.lastUpdated"
+      limit: 100
+    pagination:
+      type: "cursor"
+      next_param: "start"
+      limit_param: "limit"
+      total_field: "size"
+      results_field: "results"
+  
+  get:
+    url: "${base_url}/rest/api/content/${id}"
+    method: "GET"
+    params:
+      expand: "body.storage,version,space,history.lastUpdated,ancestors"
+  
+  search:
+    url: "${base_url}/rest/api/content/search"
+    method: "GET"
+    params:
+      cql: "type=page AND text~\"${query}\""
+      expand: "body.storage,version,space"
+
+mapping:
+  id: "$.id"
+  title: "$.title"
+  content: "$.body.storage.value"
+  content_type: "html"
+  url: "${base_url}/pages/viewpage.action?pageId=${$.id}"
+  author: "$.history.createdBy.displayName"
+  modified: "$.version.when"
+  created: "$.history.createdDate"
+  space: "$.space.name"
+  attributes:
+    space_key: "$.space.key"
+    version: "$.version.number"
+    ancestors: "$.ancestors[*].title"
+
+rate_limit:
+  requests_per_minute: 100
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - permissions
+  - spaces_filter
+
+content_processors:
+  - name: "html_to_text"
+    config:
+      preserve_links: true
+      preserve_tables: true
+
+webhook_events:
+  - "page:created"
+  - "page:updated"
+  - "page:removed"
+
+docs_url: "https://developer.atlassian.com/cloud/confluence/rest/v1/intro/"

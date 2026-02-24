@@ -1,0 +1,107 @@
+# Asana Integration Template
+name: "Asana"
+type: "rest"
+description: "Asana tasks, projects, and goals"
+icon: "asana"
+category: "project-management"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://app.asana.com/-/oauth_authorize"
+    token: "https://app.asana.com/-/oauth_token"
+
+endpoints:
+  list_workspaces:
+    url: "https://app.asana.com/api/1.0/workspaces"
+    method: "GET"
+  
+  list_projects:
+    url: "https://app.asana.com/api/1.0/workspaces/${workspace_gid}/projects"
+    method: "GET"
+    params:
+      opt_fields: "name,notes,created_at,modified_at,owner,public,archived"
+  
+  list_tasks:
+    url: "https://app.asana.com/api/1.0/projects/${project_gid}/tasks"
+    method: "GET"
+    params:
+      opt_fields: "name,notes,completed,due_on,created_at,modified_at,assignee,tags,custom_fields"
+    pagination:
+      type: "cursor"
+      next_field: "next_page.uri"
+      results_field: "data"
+  
+  get_task:
+    url: "https://app.asana.com/api/1.0/tasks/${task_gid}"
+    method: "GET"
+    params:
+      opt_fields: "name,notes,completed,due_on,created_at,modified_at,assignee,tags,projects,custom_fields,stories"
+  
+  search:
+    url: "https://app.asana.com/api/1.0/workspaces/${workspace_gid}/tasks/search"
+    method: "GET"
+    params:
+      text: "${query}"
+      opt_fields: "name,notes,completed,assignee"
+
+mapping:
+  task:
+    id: "$.gid"
+    title: "$.name"
+    content: "$.notes"
+    content_type: "text"
+    url: "https://app.asana.com/0/${project_gid}/${$.gid}"
+    author: "$.assignee.name"
+    modified: "$.modified_at"
+    created: "$.created_at"
+    document_type: "task"
+    attributes:
+      completed: "$.completed"
+      due_on: "$.due_on"
+      projects: "$.projects[*].name"
+      tags: "$.tags[*].name"
+      custom_fields: "$.custom_fields"
+  
+  project:
+    id: "$.gid"
+    title: "$.name"
+    content: "$.notes"
+    url: "https://app.asana.com/0/${$.gid}"
+    modified: "$.modified_at"
+    created: "$.created_at"
+    document_type: "project"
+
+rate_limit:
+  requests_per_minute: 1500
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - workspace_filter
+  - project_filter
+  - custom_fields
+  - stories
+
+content_types:
+  - tasks
+  - projects
+  - stories
+
+webhook_events:
+  - "added"
+  - "changed"
+  - "deleted"
+  - "removed"
+
+docs_url: "https://developers.asana.com/docs/"

@@ -1,0 +1,118 @@
+# Dropbox Integration Template
+name: "Dropbox"
+type: "rest"
+description: "Dropbox cloud storage files and Paper documents"
+icon: "dropbox"
+category: "storage"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "app_key"
+      label: "App Key"
+      type: "text"
+      required: true
+    - name: "app_secret"
+      label: "App Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://www.dropbox.com/oauth2/authorize"
+    token: "https://api.dropboxapi.com/oauth2/token"
+  scopes:
+    - "files.metadata.read"
+    - "files.content.read"
+
+endpoints:
+  list_folder:
+    url: "https://api.dropboxapi.com/2/files/list_folder"
+    method: "POST"
+    body:
+      path: "${path}"
+      recursive: true
+      include_media_info: true
+      limit: 2000
+    pagination:
+      type: "cursor"
+      cursor_field: "cursor"
+      continue_url: "https://api.dropboxapi.com/2/files/list_folder/continue"
+      has_more_field: "has_more"
+      results_field: "entries"
+  
+  get_metadata:
+    url: "https://api.dropboxapi.com/2/files/get_metadata"
+    method: "POST"
+    body:
+      path: "${path}"
+      include_media_info: true
+  
+  download:
+    url: "https://content.dropboxapi.com/2/files/download"
+    method: "POST"
+    headers:
+      Dropbox-API-Arg: '{"path": "${path}"}'
+  
+  search:
+    url: "https://api.dropboxapi.com/2/files/search_v2"
+    method: "POST"
+    body:
+      query: "${query}"
+      options:
+        max_results: 100
+        file_status: "active"
+  
+  list_paper_docs:
+    url: "https://api.dropboxapi.com/2/paper/docs/list"
+    method: "POST"
+    body:
+      limit: 1000
+
+mapping:
+  id: "$.id"
+  title: "$.name"
+  content: ""
+  url: "https://www.dropbox.com/home${$.path_display}"
+  modified: "$.server_modified"
+  created: "$.client_modified"
+  document_type: "file"
+  attributes:
+    path: "$.path_display"
+    size: "$.size"
+    content_hash: "$.content_hash"
+    is_downloadable: "$.is_downloadable"
+    media_info: "$.media_info"
+
+file_types:
+  indexable:
+    - ".pdf"
+    - ".doc"
+    - ".docx"
+    - ".txt"
+    - ".md"
+    - ".xls"
+    - ".xlsx"
+    - ".ppt"
+    - ".pptx"
+    - ".paper"
+
+rate_limit:
+  requests_per_minute: 600
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - folder_filter
+  - file_type_filter
+  - paper_documents
+  - shared_links
+
+webhook_events:
+  - "file_change"
+
+content_processors:
+  - name: "extract_text"
+    config:
+      max_file_size_mb: 150
+
+docs_url: "https://www.dropbox.com/developers/documentation/http/documentation"

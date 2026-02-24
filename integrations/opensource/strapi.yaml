@@ -1,0 +1,106 @@
+# Strapi Integration Template
+name: "Strapi"
+type: "rest"
+description: "Strapi headless CMS content types"
+icon: "strapi"
+category: "cms"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Strapi URL"
+      type: "url"
+      required: true
+      placeholder: "https://cms.example.com"
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at Settings > API Tokens"
+  headers:
+    Authorization: "Bearer ${api_token}"
+
+endpoints:
+  list_content_types:
+    url: "${base_url}/api/content-type-builder/content-types"
+    method: "GET"
+  
+  list_entries:
+    url: "${base_url}/api/${content_type}"
+    method: "GET"
+    params:
+      pagination[page]: 1
+      pagination[pageSize]: 100
+      populate: "*"
+    pagination:
+      type: "page"
+      page_param: "pagination[page]"
+      limit_param: "pagination[pageSize]"
+      results_field: "data"
+      meta_field: "meta.pagination"
+  
+  get_entry:
+    url: "${base_url}/api/${content_type}/${id}"
+    method: "GET"
+    params:
+      populate: "*"
+  
+  search:
+    url: "${base_url}/api/${content_type}"
+    method: "GET"
+    params:
+      filters[$or][0][title][$containsi]: "${query}"
+      filters[$or][1][content][$containsi]: "${query}"
+
+mapping:
+  id: "$.id"
+  title: "$.attributes.title"
+  content: "$.attributes.content"
+  content_type: "markdown"
+  url: "${base_url}/api/${content_type}/${$.id}"
+  modified: "$.attributes.updatedAt"
+  created: "$.attributes.createdAt"
+  attributes:
+    slug: "$.attributes.slug"
+    published: "$.attributes.publishedAt"
+    locale: "$.attributes.locale"
+
+dynamic_content_types:
+  enabled: true
+  discovery_endpoint: "/api/content-type-builder/content-types"
+  field_mapping:
+    title_fields:
+      - "title"
+      - "name"
+      - "heading"
+    content_fields:
+      - "content"
+      - "body"
+      - "description"
+      - "text"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - dynamic_content_types
+  - localization
+  - draft_preview
+
+webhook_events:
+  - "entry.create"
+  - "entry.update"
+  - "entry.delete"
+  - "entry.publish"
+  - "entry.unpublish"
+
+content_processors:
+  - name: "rich_text"
+    config:
+      format: "markdown"
+
+docs_url: "https://docs.strapi.io/dev-docs/api/rest"

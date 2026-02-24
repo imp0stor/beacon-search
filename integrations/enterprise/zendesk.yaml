@@ -1,0 +1,126 @@
+# Zendesk Integration Template
+name: "Zendesk"
+type: "rest"
+description: "Zendesk Help Center articles and tickets"
+icon: "zendesk"
+category: "helpdesk"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "subdomain"
+      label: "Subdomain"
+      type: "text"
+      required: true
+      placeholder: "yourcompany"
+      help: "From yourcompany.zendesk.com"
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://${subdomain}.zendesk.com/oauth/authorizations/new"
+    token: "https://${subdomain}.zendesk.com/oauth/tokens"
+  scopes:
+    - "read"
+    - "hc:read"
+
+endpoints:
+  list_articles:
+    url: "https://${subdomain}.zendesk.com/api/v2/help_center/articles"
+    method: "GET"
+    params:
+      per_page: 100
+      include: "categories,sections"
+    pagination:
+      type: "cursor"
+      next_field: "next_page"
+      results_field: "articles"
+  
+  get_article:
+    url: "https://${subdomain}.zendesk.com/api/v2/help_center/articles/${id}"
+    method: "GET"
+  
+  list_sections:
+    url: "https://${subdomain}.zendesk.com/api/v2/help_center/sections"
+    method: "GET"
+  
+  list_categories:
+    url: "https://${subdomain}.zendesk.com/api/v2/help_center/categories"
+    method: "GET"
+  
+  search:
+    url: "https://${subdomain}.zendesk.com/api/v2/help_center/articles/search"
+    method: "GET"
+    params:
+      query: "${query}"
+      per_page: 50
+  
+  list_tickets:
+    url: "https://${subdomain}.zendesk.com/api/v2/tickets"
+    method: "GET"
+    params:
+      per_page: 100
+
+mapping:
+  article:
+    id: "$.id"
+    title: "$.title"
+    content: "$.body"
+    content_type: "html"
+    url: "$.html_url"
+    author: "$.author_id"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "article"
+    attributes:
+      section_id: "$.section_id"
+      draft: "$.draft"
+      promoted: "$.promoted"
+      vote_sum: "$.vote_sum"
+      locale: "$.locale"
+      label_names: "$.label_names"
+  
+  ticket:
+    id: "$.id"
+    title: "$.subject"
+    content: "$.description"
+    url: "https://${subdomain}.zendesk.com/agent/tickets/${$.id}"
+    author: "$.requester_id"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "ticket"
+    attributes:
+      status: "$.status"
+      priority: "$.priority"
+      tags: "$.tags"
+
+rate_limit:
+  requests_per_minute: 400
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - section_filter
+  - category_filter
+  - locale_filter
+  - permissions
+
+content_types:
+  - articles
+  - tickets
+  - community_posts
+
+webhook_events:
+  - "zen:event-type:article.published"
+  - "zen:event-type:article.updated"
+
+content_processors:
+  - name: "html_to_text"
+
+docs_url: "https://developer.zendesk.com/api-reference/"

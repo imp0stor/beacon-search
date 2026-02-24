@@ -1,0 +1,118 @@
+# Freshdesk Integration Template
+name: "Freshdesk"
+type: "rest"
+description: "Freshdesk knowledge base solutions and tickets"
+icon: "freshdesk"
+category: "helpdesk"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "domain"
+      label: "Domain"
+      type: "text"
+      required: true
+      placeholder: "yourcompany"
+      help: "From yourcompany.freshdesk.com"
+    - name: "api_key"
+      label: "API Key"
+      type: "password"
+      required: true
+      help: "Find at Profile Settings > API Key"
+  basic_auth:
+    username: "${api_key}"
+    password: "X"
+
+endpoints:
+  list_solutions:
+    url: "https://${domain}.freshdesk.com/api/v2/solutions/articles"
+    method: "GET"
+    params:
+      per_page: 100
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "per_page"
+  
+  get_article:
+    url: "https://${domain}.freshdesk.com/api/v2/solutions/articles/${id}"
+    method: "GET"
+  
+  list_folders:
+    url: "https://${domain}.freshdesk.com/api/v2/solutions/folders"
+    method: "GET"
+  
+  list_categories:
+    url: "https://${domain}.freshdesk.com/api/v2/solutions/categories"
+    method: "GET"
+  
+  search:
+    url: "https://${domain}.freshdesk.com/api/v2/search/solutions"
+    method: "GET"
+    params:
+      term: "${query}"
+  
+  list_tickets:
+    url: "https://${domain}.freshdesk.com/api/v2/tickets"
+    method: "GET"
+    params:
+      per_page: 100
+      include: "description"
+
+mapping:
+  article:
+    id: "$.id"
+    title: "$.title"
+    content: "$.description"
+    content_type: "html"
+    url: "https://${domain}.freshdesk.com/a/solutions/articles/${$.id}"
+    author: "$.agent_id"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "solution"
+    attributes:
+      folder_id: "$.folder_id"
+      category_id: "$.category_id"
+      status: "$.status"
+      views: "$.views"
+      thumbs_up: "$.thumbs_up"
+      thumbs_down: "$.thumbs_down"
+      seo_data: "$.seo_data"
+  
+  ticket:
+    id: "$.id"
+    title: "$.subject"
+    content: "$.description_text"
+    url: "https://${domain}.freshdesk.com/a/tickets/${$.id}"
+    author: "$.requester_id"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "ticket"
+    attributes:
+      status: "$.status"
+      priority: "$.priority"
+      tags: "$.tags"
+
+rate_limit:
+  requests_per_minute: 250
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - folder_filter
+  - category_filter
+  - status_filter
+
+content_types:
+  - solutions
+  - tickets
+  - canned_responses
+
+webhook_events:
+  - "onTicketCreate"
+  - "onTicketUpdate"
+  - "onSolutionArticleCreate"
+  - "onSolutionArticleUpdate"
+
+docs_url: "https://developers.freshdesk.com/api/"

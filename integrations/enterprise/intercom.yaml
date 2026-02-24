@@ -1,0 +1,97 @@
+# Intercom Integration Template
+name: "Intercom"
+type: "rest"
+description: "Intercom Help Center articles and conversations"
+icon: "intercom"
+category: "support"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "client_id"
+      label: "Client ID"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Client Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "https://app.intercom.com/oauth"
+    token: "https://api.intercom.io/auth/eagle/token"
+  scopes:
+    - "read_articles"
+    - "read_conversations"
+
+endpoints:
+  list_articles:
+    url: "https://api.intercom.io/articles"
+    method: "GET"
+    pagination:
+      type: "cursor"
+      next_field: "pages.next"
+      results_field: "data"
+  
+  get_article:
+    url: "https://api.intercom.io/articles/${id}"
+    method: "GET"
+  
+  list_collections:
+    url: "https://api.intercom.io/help_center/collections"
+    method: "GET"
+  
+  list_sections:
+    url: "https://api.intercom.io/help_center/sections"
+    method: "GET"
+  
+  search:
+    url: "https://api.intercom.io/articles/search"
+    method: "POST"
+    body:
+      query: "${query}"
+
+mapping:
+  id: "$.id"
+  title: "$.title"
+  content: "$.body"
+  content_type: "html"
+  url: "$.url"
+  author: "$.author_id"
+  modified: "$.updated_at"
+  created: "$.created_at"
+  document_type: "article"
+  attributes:
+    parent_id: "$.parent_id"
+    parent_type: "$.parent_type"
+    state: "$.state"
+    statistics:
+      views: "$.statistics.views"
+      conversions: "$.statistics.conversions"
+      reactions: "$.statistics.reactions"
+      ratings: "$.statistics.ratings"
+
+rate_limit:
+  requests_per_minute: 500
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - collection_filter
+  - multilingual
+  - statistics
+
+content_types:
+  - articles
+  - collections
+  - sections
+
+webhook_events:
+  - "article.created"
+  - "article.published"
+  - "article.updated"
+
+content_processors:
+  - name: "html_to_text"
+
+docs_url: "https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Articles"

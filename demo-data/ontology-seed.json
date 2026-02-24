@@ -1,0 +1,175 @@
+{
+  "taxonomies": [
+    { "name": "nostr", "description": "Nostr protocol and ecosystem" },
+    { "name": "podcast", "description": "Podcasting and audio shows" },
+    { "name": "knowledge-base", "description": "Knowledge base and documentation" }
+  ],
+  "concepts": [
+    {
+      "term": "Nostr",
+      "description": "Decentralized social protocol",
+      "synonyms": ["nostr protocol"],
+      "aliases": [
+        { "alias": "Notes and Other Stuff Transmitted by Relays", "type": "phrase", "weight": 1.0 }
+      ],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Relay",
+      "description": "Nostr relay server",
+      "synonyms": ["nostr relay"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "NIP",
+      "description": "Nostr Improvement Proposal",
+      "synonyms": ["nostr improvement proposal"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "NIP-05",
+      "description": "Nostr identity verification",
+      "synonyms": ["nostr nip-05", "nostr verification"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Public Key",
+      "description": "Nostr public key",
+      "synonyms": ["pubkey"],
+      "aliases": [
+        { "alias": "npub", "type": "abbrev", "weight": 0.8 }
+      ],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Event",
+      "description": "Nostr event object",
+      "synonyms": ["nostr event", "note"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Zap",
+      "description": "Nostr lightning tip",
+      "synonyms": ["nostr zap", "lightning tip"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Lightning Network",
+      "description": "Bitcoin lightning network",
+      "synonyms": ["lightning", "ln"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Client",
+      "description": "Nostr client application",
+      "synonyms": ["nostr client"],
+      "taxonomies": ["nostr"]
+    },
+    {
+      "term": "Podcast",
+      "description": "Audio show series",
+      "synonyms": ["audio show"],
+      "relations": [
+        { "type": "narrower", "target": "Episode", "weight": 1.0 },
+        { "type": "broader", "target": "Audio Content", "weight": 1.0 }
+      ],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "Episode",
+      "description": "Individual podcast episode",
+      "synonyms": ["podcast episode"],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "RSS Feed",
+      "description": "Podcast distribution feed",
+      "synonyms": ["podcast rss", "rss"],
+      "aliases": [
+        { "alias": "rss feed", "type": "phrase", "weight": 0.9 }
+      ],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "Transcript",
+      "description": "Podcast transcript text",
+      "synonyms": ["episode transcript"],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "Host",
+      "description": "Podcast host",
+      "synonyms": ["podcast host"],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "Show",
+      "description": "Podcast show",
+      "synonyms": ["series"],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "Audio Content",
+      "description": "Audio-based content",
+      "synonyms": ["audio"],
+      "taxonomies": ["podcast"]
+    },
+    {
+      "term": "Knowledge Base",
+      "description": "Knowledge base collection",
+      "synonyms": ["kb"],
+      "aliases": [
+        { "alias": "kb", "type": "abbrev", "weight": 0.8 }
+      ],
+      "relations": [
+        { "type": "related", "target": "FAQ", "weight": 0.8 }
+      ],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "FAQ",
+      "description": "Frequently asked questions",
+      "synonyms": ["faqs"],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "Runbook",
+      "description": "Operational runbook",
+      "synonyms": ["ops runbook"],
+      "relations": [
+        { "type": "related", "target": "Playbook", "weight": 0.8 }
+      ],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "Playbook",
+      "description": "Procedural playbook",
+      "synonyms": ["ops playbook"],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "SOP",
+      "description": "Standard operating procedure",
+      "synonyms": ["standard operating procedure"],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "How-to Article",
+      "description": "Instructional article",
+      "synonyms": ["how to", "guide"],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "Troubleshooting Guide",
+      "description": "Issue resolution guide",
+      "synonyms": ["troubleshooting", "fix guide"],
+      "taxonomies": ["knowledge-base"]
+    },
+    {
+      "term": "Documentation",
+      "description": "Reference documentation",
+      "synonyms": ["docs"],
+      "taxonomies": ["knowledge-base"]
+    }
+  ]
+}

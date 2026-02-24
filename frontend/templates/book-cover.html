@@ -1,0 +1,174 @@
+<!--
+  Book Cover Template
+  Used in Grid View - displays documents as book covers with thumbnails
+  
+  Variables:
+  - {{id}} - Document ID
+  - {{title}} - Document title
+  - {{author}} - Author name (optional)
+  - {{coverImage}} - URL to cover image (optional)
+  - {{type}} - Document type for icon
+  - {{bgColor}} - Background color if no cover image
+  - {{isFavorite}} - Boolean for favorite status
+-->
+
+<div
+  class="book-cover {{#if isFavorite}}favorite{{/if}}"
+  data-id="{{id}}"
+  draggable="true"
+>
+  <!-- Cover image area -->
+  <div class="cover-image" style="background: {{bgColor}}">
+    {{#if coverImage}}
+    <img src="{{coverImage}}" alt="{{title}}" class="cover-img" />
+    {{else}}
+    <span class="cover-icon">{{icon}}</span>
+    {{/if}}
+    
+    <!-- Title overlay on cover -->
+    <div class="cover-title-overlay">
+      <h4>{{title}}</h4>
+    </div>
+  </div>
+  
+  <!-- Info below cover -->
+  <div class="cover-info">
+    <h4 class="cover-title">{{title}}</h4>
+    {{#if author}}
+    <p class="cover-author">{{author}}</p>
+    {{/if}}
+  </div>
+  
+  <!-- Favorite button -->
+  <button class="favorite-btn {{#if isFavorite}}active{{/if}}">
+    {{#if isFavorite}}★{{else}}☆{{/if}}
+  </button>
+</div>
+
+<style>
+.book-cover {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.book-cover:hover {
+  transform: translateY(-8px);
+}
+
+.cover-image {
+  aspect-ratio: 2/3;
+  border-radius: 4px 12px 12px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    4px 4px 12px rgba(0, 0, 0, 0.4),
+    inset -4px 0 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Book spine edge effect */
+.cover-image::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 15px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.3), transparent);
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-icon {
+  font-size: 3rem;
+  opacity: 0.9;
+}
+
+.cover-title-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem 0.75rem 0.75rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+.cover-title-overlay h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.cover-info {
+  padding: 0.75rem 0.25rem;
+}
+
+.cover-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cover-author {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+.favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.book-cover:hover .favorite-btn {
+  opacity: 1;
+}
+
+.favorite-btn.active {
+  opacity: 1;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.2);
+}
+</style>
+
+<!--
+  Icon Mapping by Type:
+  - documentation: 📖
+  - article: 📰
+  - research: 🔬
+  - tutorial: 📚
+  - reference: 📋
+  - blog: ✍️
+  - news: 📢
+  - book: 📕
+  - video: 🎬
+  - audio: 🎧
+  - image: 🖼️
+  - pdf: 📄
+  - default: 📄
+-->

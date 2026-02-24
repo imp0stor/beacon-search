@@ -1,0 +1,137 @@
+# GitLab Integration Template
+name: "GitLab"
+type: "rest"
+description: "GitLab repositories, wikis, issues, and merge requests"
+icon: "gitlab"
+category: "development"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "GitLab URL"
+      type: "url"
+      required: true
+      placeholder: "https://gitlab.com"
+      default: "https://gitlab.com"
+    - name: "access_token"
+      label: "Personal Access Token"
+      type: "password"
+      required: true
+      help: "Generate at Settings > Access Tokens with read_api scope"
+  headers:
+    PRIVATE-TOKEN: "${access_token}"
+
+endpoints:
+  list_projects:
+    url: "${base_url}/api/v4/projects"
+    method: "GET"
+    params:
+      membership: true
+      per_page: 100
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "per_page"
+      header_next: "x-next-page"
+  
+  list_wikis:
+    url: "${base_url}/api/v4/projects/${project_id}/wikis"
+    method: "GET"
+    params:
+      with_content: true
+  
+  list_issues:
+    url: "${base_url}/api/v4/projects/${project_id}/issues"
+    method: "GET"
+    params:
+      per_page: 100
+      state: "all"
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "per_page"
+  
+  list_merge_requests:
+    url: "${base_url}/api/v4/projects/${project_id}/merge_requests"
+    method: "GET"
+    params:
+      per_page: 100
+      state: "all"
+  
+  get_file:
+    url: "${base_url}/api/v4/projects/${project_id}/repository/files/${file_path}"
+    method: "GET"
+    params:
+      ref: "main"
+  
+  search:
+    url: "${base_url}/api/v4/search"
+    method: "GET"
+    params:
+      scope: "wiki_blobs"
+      search: "${query}"
+
+mapping:
+  # Wiki pages
+  wiki:
+    id: "$.slug"
+    title: "$.title"
+    content: "$.content"
+    content_type: "markdown"
+    url: "${base_url}/${project_path}/-/wikis/${$.slug}"
+    modified: "$.format"
+    document_type: "wiki"
+  
+  # Issues
+  issue:
+    id: "$.iid"
+    title: "$.title"
+    content: "$.description"
+    content_type: "markdown"
+    url: "$.web_url"
+    author: "$.author.name"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "issue"
+    attributes:
+      state: "$.state"
+      labels: "$.labels"
+      milestone: "$.milestone.title"
+  
+  # Merge requests
+  merge_request:
+    id: "$.iid"
+    title: "$.title"
+    content: "$.description"
+    content_type: "markdown"
+    url: "$.web_url"
+    author: "$.author.name"
+    modified: "$.updated_at"
+    document_type: "merge_request"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 10
+
+features:
+  - incremental_sync
+  - webhooks
+  - permissions
+  - project_filter
+  - branch_filter
+
+content_types:
+  - wikis
+  - issues
+  - merge_requests
+  - readme_files
+  - markdown_files
+
+webhook_events:
+  - "wiki_page"
+  - "issue"
+  - "merge_request"
+  - "push"
+
+docs_url: "https://docs.gitlab.com/ee/api/"

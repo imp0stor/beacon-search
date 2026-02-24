@@ -1,0 +1,103 @@
+# Salesforce Integration Template
+name: "Salesforce"
+type: "rest"
+description: "Salesforce Knowledge articles and content"
+icon: "salesforce"
+category: "crm"
+
+auth:
+  type: "oauth2"
+  fields:
+    - name: "instance_url"
+      label: "Instance URL"
+      type: "url"
+      required: true
+      placeholder: "https://company.my.salesforce.com"
+    - name: "client_id"
+      label: "Consumer Key"
+      type: "text"
+      required: true
+    - name: "client_secret"
+      label: "Consumer Secret"
+      type: "password"
+      required: true
+  oauth_urls:
+    authorize: "${instance_url}/services/oauth2/authorize"
+    token: "${instance_url}/services/oauth2/token"
+  scopes:
+    - "api"
+    - "refresh_token"
+
+endpoints:
+  list_knowledge:
+    url: "${instance_url}/services/data/v59.0/query"
+    method: "GET"
+    params:
+      q: "SELECT Id, Title, Summary, ArticleNumber, PublishStatus, LastModifiedDate, CreatedDate FROM Knowledge__kav WHERE PublishStatus = 'Online'"
+    pagination:
+      type: "cursor"
+      next_field: "nextRecordsUrl"
+      results_field: "records"
+  
+  get_article:
+    url: "${instance_url}/services/data/v59.0/sobjects/Knowledge__kav/${id}"
+    method: "GET"
+  
+  search:
+    url: "${instance_url}/services/data/v59.0/search"
+    method: "GET"
+    params:
+      q: "FIND {${query}} IN ALL FIELDS RETURNING Knowledge__kav(Id, Title, Summary)"
+  
+  describe_object:
+    url: "${instance_url}/services/data/v59.0/sobjects/Knowledge__kav/describe"
+    method: "GET"
+  
+  list_content:
+    url: "${instance_url}/services/data/v59.0/query"
+    method: "GET"
+    params:
+      q: "SELECT Id, Title, Description, ContentDocumentId, FileType FROM ContentVersion WHERE IsLatest = true"
+
+mapping:
+  id: "$.Id"
+  title: "$.Title"
+  content: "$.Summary"
+  content_type: "html"
+  url: "${instance_url}/lightning/r/Knowledge__kav/${$.Id}/view"
+  author: "$.CreatedById"
+  modified: "$.LastModifiedDate"
+  created: "$.CreatedDate"
+  document_type: "knowledge_article"
+  attributes:
+    article_number: "$.ArticleNumber"
+    publish_status: "$.PublishStatus"
+    article_type: "$.RecordTypeId"
+    categories: "$.DataCategorySelections"
+
+rate_limit:
+  requests_per_minute: 300
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - article_types
+  - data_categories
+  - permissions
+  - bulk_api
+
+content_types:
+  - knowledge_articles
+  - content_documents
+  - files
+
+content_processors:
+  - name: "html_to_text"
+  - name: "rich_text_fields"
+    config:
+      fields:
+        - "Summary__c"
+        - "Problem__c"
+        - "Solution__c"
+
+docs_url: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_rest.htm"

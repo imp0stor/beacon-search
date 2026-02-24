@@ -1,0 +1,168 @@
+/**
+ * Strange Signal Unified UI Framework
+ * Version: 1.0.0
+ * Date: 2026-02-17
+ * 
+ * Token-first design system for NostrMaxi, NostrCast, Beacon, and Hive
+ */
+
+/* Tokens (foundation layer) */
+@import './tokens/colors.css';
+@import './tokens/spacing.css';
+@import './tokens/typography.css';
+@import './tokens/motion.css';
+@import './tokens/shapes.css';
+
+/* Primitives (atomic components) */
+@import './primitives/button.css';
+@import './primitives/input.css';
+@import './primitives/badge.css';
+
+/* Composites (molecular components) */
+@import './composites/card.css';
+@import './composites/table.css';
+
+/* Base application styles */
+.ui-app {
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  min-height: 100vh;
+  font-family: var(--ui-font);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Navigation rail */
+.ui-rail {
+  background: rgba(18, 26, 43, 0.9);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5) var(--space-4);
+  box-shadow: var(--shadow-lg);
+}
+
+.ui-rail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--ui-muted);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  transition: var(--transition-colors);
+  cursor: pointer;
+}
+
+.ui-rail-item:hover {
+  color: var(--ui-text);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.ui-rail-item[data-active='true'] {
+  color: var(--ui-text);
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+/* Utility classes */
+.ui-divider {
+  height: 1px;
+  background: var(--ui-border);
+  border: none;
+}
+
+.ui-muted {
+  color: var(--ui-muted);
+}
+
+.ui-muted-2 {
+  color: var(--ui-muted-2);
+}
+
+.ui-text-secondary {
+  color: var(--ui-text-secondary);
+}
+
+.ui-highlight {
+  color: var(--ui-accent-2);
+}
+
+/* Loading states */
+.ui-skeleton {
+  background: linear-gradient(90deg, 
+    var(--ui-surface-2) 0%, 
+    var(--ui-surface-3) 50%, 
+    var(--ui-surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+.ui-skeleton-text {
+  height: 1em;
+  margin-bottom: var(--space-2);
+}
+
+.ui-skeleton-circle {
+  border-radius: 50%;
+  aspect-ratio: 1;
+}
+
+/* Focus management */
+.ui-focus-trap {
+  position: relative;
+}
+
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Accessibility helpers */
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Mobile navigation (bottom bar) */
+@media (max-width: 768px) {
+  .ui-rail {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: var(--space-2) var(--space-4);
+    border-radius: 0;
+    z-index: var(--z-sticky);
+  }
+
+  .ui-rail-item {
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+  }
+}
+
+/* Touch targets (mobile) */
+@media (hover: none) and (pointer: coarse) {
+  .ui-button,
+  .ui-rail-item,
+  .ui-table tbody tr {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

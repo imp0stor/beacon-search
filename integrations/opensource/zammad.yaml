@@ -1,0 +1,107 @@
+# Zammad Integration Template
+name: "Zammad"
+type: "rest"
+description: "Zammad helpdesk tickets and knowledge base"
+icon: "zammad"
+category: "helpdesk"
+
+auth:
+  type: "token"
+  fields:
+    - name: "base_url"
+      label: "Zammad URL"
+      type: "url"
+      required: true
+      placeholder: "https://helpdesk.example.com"
+    - name: "api_token"
+      label: "API Token"
+      type: "password"
+      required: true
+      help: "Generate at Profile > Token Access"
+  headers:
+    Authorization: "Token token=${api_token}"
+
+endpoints:
+  list_tickets:
+    url: "${base_url}/api/v1/tickets"
+    method: "GET"
+    params:
+      per_page: 100
+    pagination:
+      type: "page"
+      page_param: "page"
+      limit_param: "per_page"
+  
+  get_ticket:
+    url: "${base_url}/api/v1/tickets/${id}"
+    method: "GET"
+  
+  list_articles:
+    url: "${base_url}/api/v1/ticket_articles/by_ticket/${ticket_id}"
+    method: "GET"
+  
+  list_kb_categories:
+    url: "${base_url}/api/v1/knowledge_base/categories"
+    method: "GET"
+  
+  list_kb_answers:
+    url: "${base_url}/api/v1/knowledge_base/answers"
+    method: "GET"
+  
+  search:
+    url: "${base_url}/api/v1/tickets/search"
+    method: "GET"
+    params:
+      query: "${query}"
+      limit: 50
+
+mapping:
+  ticket:
+    id: "$.id"
+    title: "$.title"
+    content: "$.articles[0].body"
+    content_type: "html"
+    url: "${base_url}/#ticket/zoom/${$.id}"
+    author: "$.customer.email"
+    modified: "$.updated_at"
+    created: "$.created_at"
+    document_type: "ticket"
+    attributes:
+      state: "$.state.name"
+      priority: "$.priority.name"
+      group: "$.group.name"
+      owner: "$.owner.email"
+      tags: "$.tags"
+  
+  kb_answer:
+    id: "$.id"
+    title: "$.translation.title"
+    content: "$.translation.content.body"
+    content_type: "html"
+    url: "${base_url}/help/${locale}/knowledge_base/answer/${$.id}"
+    modified: "$.updated_at"
+    document_type: "kb_article"
+    attributes:
+      category: "$.category.translation.title"
+
+rate_limit:
+  requests_per_minute: 200
+  concurrent: 5
+
+features:
+  - incremental_sync
+  - webhooks
+  - ticket_filter
+  - kb_categories
+
+content_types:
+  - tickets
+  - knowledge_base_answers
+
+webhook_events:
+  - "ticket.create"
+  - "ticket.update"
+  - "knowledge_base.answer.create"
+  - "knowledge_base.answer.update"
+
+docs_url: "https://docs.zammad.org/en/latest/api/intro.html"

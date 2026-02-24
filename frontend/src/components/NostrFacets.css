@@ -1,0 +1,132 @@
+/* Nostr Faceted Search Styles */
+
+.nostr-facets {
+  background: #1a1a2e;
+  border: 1px solid #2d2d44;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.nostr-facets.loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+}
+
+.facets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2d2d44;
+}
+
+.facets-header h3 {
+  margin: 0;
+  color: #e0e0e0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.clear-filters {
+  background: transparent;
+  border: 1px solid #8b5cf6;
+  color: #8b5cf6;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-filters:hover {
+  background: #8b5cf6;
+  color: white;
+}
+
+.facet-group {
+  margin-bottom: 20px;
+}
+
+.facet-group:last-child {
+  margin-bottom: 0;
+}
+
+.facet-group h4 {
+  margin: 0 0 12px 0;
+  color: #8b5cf6;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.facet-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.facet-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.facet-item:hover {
+  background: #2d2d44;
+}
+
+.facet-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: #8b5cf6;
+}
+
+.facet-label {
+  color: #ccc;
+  font-size: 14px;
+  flex: 1;
+  user-select: none;
+}
+
+.facet-count {
+  color: #888;
+  font-size: 12px;
+}
+
+/* Tag Cloud */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-button {
+  background: #2d2d44;
+  color: #8b5cf6;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-button:hover {
+  background: #3a3a5a;
+  border-color: #8b5cf6;
+}
+
+.tag-button.active {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+}

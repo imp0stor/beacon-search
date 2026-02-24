@@ -1,0 +1,116 @@
+# MediaWiki Integration Template
+name: "MediaWiki"
+type: "rest"
+description: "MediaWiki pages including Wikipedia-style wikis"
+icon: "mediawiki"
+category: "wiki"
+
+auth:
+  type: "api_key"
+  fields:
+    - name: "base_url"
+      label: "Wiki URL"
+      type: "url"
+      required: true
+      placeholder: "https://wiki.example.com"
+    - name: "api_path"
+      label: "API Path"
+      type: "text"
+      default: "/api.php"
+    - name: "username"
+      label: "Bot Username"
+      type: "text"
+      required: false
+    - name: "password"
+      label: "Bot Password"
+      type: "password"
+      required: false
+      help: "Only needed for private wikis"
+
+endpoints:
+  list:
+    url: "${base_url}${api_path}"
+    method: "GET"
+    params:
+      action: "query"
+      list: "allpages"
+      aplimit: 500
+      format: "json"
+    pagination:
+      type: "cursor"
+      next_param: "apcontinue"
+      results_field: "query.allpages"
+  
+  get:
+    url: "${base_url}${api_path}"
+    method: "GET"
+    params:
+      action: "query"
+      prop: "revisions|info"
+      pageids: "${id}"
+      rvprop: "content|timestamp|user"
+      rvslots: "main"
+      format: "json"
+  
+  search:
+    url: "${base_url}${api_path}"
+    method: "GET"
+    params:
+      action: "query"
+      list: "search"
+      srsearch: "${query}"
+      srlimit: 50
+      format: "json"
+  
+  recent_changes:
+    url: "${base_url}${api_path}"
+    method: "GET"
+    params:
+      action: "query"
+      list: "recentchanges"
+      rcprop: "title|timestamp|ids"
+      rclimit: 100
+      format: "json"
+
+mapping:
+  id: "$.pageid"
+  title: "$.title"
+  content: "$.revisions[0].slots.main.*"
+  content_type: "wikitext"
+  url: "${base_url}/wiki/${$.title}"
+  author: "$.revisions[0].user"
+  modified: "$.revisions[0].timestamp"
+  attributes:
+    namespace: "$.ns"
+    length: "$.length"
+
+rate_limit:
+  requests_per_minute: 200
+  concurrent: 3
+
+features:
+  - incremental_sync
+  - namespace_filter
+  - recent_changes_sync
+
+content_processors:
+  - name: "wikitext_to_text"
+    config:
+      strip_templates: true
+      preserve_links: false
+      preserve_categories: true
+
+namespaces:
+  - id: 0
+    name: "Main"
+    default: true
+  - id: 1
+    name: "Talk"
+  - id: 4
+    name: "Project"
+  - id: 10
+    name: "Template"
+  - id: 14
+    name: "Category"
+
+docs_url: "https://www.mediawiki.org/wiki/API:Main_page"
