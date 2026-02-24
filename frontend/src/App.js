@@ -3,7 +3,11 @@ import './App.css';
 import Bookshelf from './Bookshelf';
 import ConfigWizard from './ConfigWizard';
 import { LayoutShell, NavRail, KpiCard, TableCard, StatusPanel, ChartCard } from './ui';
-import { useSharedUI } from '../../../shared-ui/feature-flags';
+import { useSharedUI } from './shared-ui/feature-flags.js';
+import RichContentView from './components/RichContentView';
+import TagCloud from './components/TagCloud.jsx';
+import TagFilterSidebar from './components/TagFilterSidebar.jsx';
+import InfiniteScrollResults from './components/InfiniteScrollResults.jsx';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -82,6 +86,8 @@ function App() {
   const [facets, setFacets] = useState(null);
   const [tagCloud, setTagCloud] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
+  const [minQuality, setMinQuality] = useState(0.3);
+  const [showMediaOnly, setShowMediaOnly] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [selectedSentiment, setSelectedSentiment] = useState(null);
   const [selectedSource, setSelectedSource] = useState(null);
@@ -579,6 +585,8 @@ function App() {
 
   const clearFilters = () => {
     setSelectedTags([]);
+    setMinQuality(0.3);
+    setShowMediaOnly(false);
     setSelectedEntity(null);
     setSelectedSentiment(null);
     setSelectedSource(null);
@@ -1052,237 +1060,28 @@ function App() {
                 </div>
               )}
 
-              <div className="results">
-                {searchResults.map((result) => (
-                  <article
-                    key={result.id}
-                    className={`result-card ${expandedDoc === result.id ? 'expanded' : ''}`}
-                    onClick={() => loadDocDetail(result.id)}
-                  >
-                    <div className="result-header">
-                      <h3 className="result-title">
-                        {result.url ? (
-                          <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                            {result.title}
-                          </a>
-                        ) : (
-                          result.title
-                        )}
-                      </h3>
-                      {result.score !== undefined && (
-                        <span className="result-score">{(result.score * 100).toFixed(1)}%</span>
-                      )}
-                    </div>
-
-                    {result.url && <cite className="result-url">{result.url}</cite>}
-
-                    <div className="result-content-wrapper" onClick={e => e.stopPropagation()}>
-                      <p className={`result-content ${expandedContent.has(result.id) ? 'expanded' : 'truncated'}`}>
-                        {expandedContent.has(result.id)
-                          ? result.content
-                          : result.content?.substring(0, 200) + (result.content?.length > 200 ? '...' : '')
-                        }
-                      </p>
-                      {result.content?.length > 200 && (
-                        <button
-                          className="expand-button"
-                          onClick={() => toggleContentExpansion(result.id)}
-                        >
-                          {expandedContent.has(result.id) ? '▲ Collapse' : '▼ Expand'}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="result-footer">
-                      {result.source_id && (
-                        <span className="result-source">
-                          Source: {sourceNameLookup.get(result.source_id) || result.source_id.substring(0, 8)}
-                        </span>
-                      )}
-
-                      {result.attributes?.event_id && (
-                        <div className="nostr-actions" onClick={e => e.stopPropagation()}>
-                          {nostrPubkey ? (
-                            <>
-                              <button
-                                className="nostr-btn like-btn"
-                                onClick={() => likeNostrEvent(result.attributes.event_id)}
-                                title="Like"
-                              >
-                                👍
-                              </button>
-                              <button
-                                className="nostr-btn repost-btn"
-                                onClick={() => repostNostrEvent(result.attributes.event_id)}
-                                title="Repost"
-                              >
-                                🔄
-                              </button>
-                              <button
-                                className="nostr-btn zap-btn"
-                                onClick={() => alert('Zap functionality coming soon!')}
-                                title="Zap"
-                              >
-                                ⚡
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              className="nostr-login-btn"
-                              onClick={loginWithNostr}
-                              disabled={nostrLoading}
-                            >
-                              {nostrLoading ? 'Connecting...' : '🟣 Login with Nostr'}
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {expandedDoc === result.id && (
-                      <div className="document-detail-panel" onClick={e => e.stopPropagation()}>
-                        <div className="detail-tabs">
-                          {['metadata', 'entities', 'tags', 'related'].map(tab => (
-                            <button
-                              key={tab}
-                              className={`detail-tab ${detailTab === tab ? 'active' : ''}`}
-                              onClick={() => setDetailTab(tab)}
-                            >
-                              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="detail-content">
-                          {detailTab === 'metadata' && (
-                            <div className="metadata-grid">
-                              {docDetail.metadata.map(m => (
-                                <div key={m.key} className="metadata-item">
-                                  <div className="metadata-label">{m.key.replace(/_/g, ' ')}</div>
-                                  <div className={`metadata-value ${m.key === 'sentiment' ? m.value : ''}`}>
-                                    {m.key === 'reading_time_minutes' ? `${m.value} min read` :
-                                      m.key === 'word_count' ? `${m.value} words` :
-                                        m.key === 'sentiment' ? (m.value === 'positive' ? '😊 Positive' : m.value === 'negative' ? '😞 Negative' : '😐 Neutral') :
-                                          m.value}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {detailTab === 'entities' && (
-                            <div>
-                              {Object.entries(groupedEntities).map(([type, entities]) => (
-                                <div key={type} className="entity-group">
-                                  <div className="entity-group-title">{ENTITY_ICONS[type]} {type}</div>
-                                  <div className="entity-badges">
-                                    {entities.map((e, i) => (
-                                      <span key={i} className={`entity-badge ${type}`}>
-                                        {e.normalizedValue || e.value}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                              {Object.keys(groupedEntities).length === 0 && (
-                                <p className="empty-text">No entities extracted yet.</p>
-                              )}
-                            </div>
-                          )}
-
-                          {detailTab === 'tags' && (
-                            <div className="tag-management">
-                              <div className="add-tag-form">
-                                <input
-                                  type="text"
-                                  value={newTag}
-                                  onChange={e => setNewTag(e.target.value)}
-                                  placeholder="Add a tag..."
-                                  className="add-tag-input"
-                                />
-                                <button
-                                  className="add-tag-btn"
-                                  onClick={() => newTag && addTag(result.id, newTag)}
-                                >
-                                  Add
-                                </button>
-                              </div>
-
-                              <div className="tag-cloud">
-                                {docDetail.tags.map(t => (
-                                  <span
-                                    key={t.tag}
-                                    className={`tag-item clickable ${selectedTags.includes(normalizeTag(t.tag)) ? 'active' : ''}`}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => toggleTag(t.tag)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        toggleTag(t.tag);
-                                      }
-                                    }}
-                                  >
-                                    {t.tag}
-                                    {t.source === 'manual' && (
-                                      <button
-                                        className="remove-btn"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          removeTag(result.id, t.tag);
-                                        }}
-                                        aria-label={`Remove tag ${t.tag}`}
-                                      >
-                                        ×
-                                      </button>
-                                    )}
-                                  </span>
-                                ))}
-                              </div>
-
-                              {docDetail.suggestions.length > 0 && (
-                                <div className="tag-suggestions">
-                                  <div className="tag-suggestions-label">💡 Suggested tags:</div>
-                                  <div className="suggested-tags">
-                                    {docDetail.suggestions.map(s => (
-                                      <span
-                                        key={s.tag}
-                                        className="suggested-tag"
-                                        onClick={() => addTag(result.id, s.tag)}
-                                        title={s.reason}
-                                      >
-                                        + {s.tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {detailTab === 'related' && (
-                            <div className="related-docs">
-                              {docDetail.related.map(r => (
-                                <div key={r.id} className="related-doc">
-                                  <div>
-                                    <div className="related-doc-title">{r.title}</div>
-                                    <div className="related-doc-reason">
-                                      {r.sharedEntities.length > 0 && `Shares: ${r.sharedEntities.slice(0, 3).join(', ')}`}
-                                      {r.sharedTags.length > 0 && ` • Tags: ${r.sharedTags.slice(0, 3).join(', ')}`}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                              {docDetail.related.length === 0 && (
-                                <p className="empty-text">No related documents found.</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </article>
-                ))}
+              <div className="search-layout" style={{ display: 'flex', gap: '0' }}>
+                <TagFilterSidebar
+                  selectedTags={selectedTags}
+                  onTagToggle={toggleTag}
+                  onClearFilters={clearFilters}
+                  minQuality={minQuality}
+                  onMinQualityChange={setMinQuality}
+                  showMediaOnly={showMediaOnly}
+                  onShowMediaOnlyChange={setShowMediaOnly}
+                />
+                <div style={{ marginLeft: '280px', flex: 1 }}>
+                  <InfiniteScrollResults
+                    query={query}
+                    mode={searchMode}
+                    filters={{
+                      tags: selectedTags,
+                      minQuality,
+                      hasMedia: showMediaOnly
+                    }}
+                    onResultClick={(result) => loadDocDetail(result.id)}
+                  />
+                </div>
               </div>
 
               {hasSearched && searchResults.length === 0 && !loading && !error && (
@@ -1298,6 +1097,18 @@ function App() {
 
           {activeWorkspace === 'explore' && (
             <section className="workspace-section">
+              <TagCloud 
+                selectedTags={selectedTags}
+                onTagSelect={(tags) => setSelectedTags(tags.map(normalizeTag))}
+                onTagRemove={(tag) => setSelectedTags(selectedTags.filter(t => t !== normalizeTag(tag)))}
+                onClearFilters={() => {
+                  setSelectedTags([]);
+                  setSelectedEntity(null);
+                  setSelectedSentiment(null);
+                }}
+                maxTags={50}
+                minCount={1}
+              />
               <div className="panel-grid">
                 <div className="panel">
                   <div className="panel-header">

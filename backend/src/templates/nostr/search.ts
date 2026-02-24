@@ -19,6 +19,7 @@ export interface NostrSearchFilters {
   authors?: string[];
   tags?: string[];
   minScore?: number;
+  content_types?: string[];
 }
 
 /**
@@ -128,6 +129,12 @@ export function buildNostrFilterClause(filters: NostrSearchFilters): { where: st
   if (filters.tags && filters.tags.length > 0) {
     conditions.push(`attributes->'tags'->'topic' ?| $${paramIndex}`);
     params.push(filters.tags);
+    paramIndex++;
+  }
+
+  if (filters.content_types && filters.content_types.length > 0) {
+    conditions.push(`content_type = ANY($${paramIndex}::content_type[])`);
+    params.push(filters.content_types);
     paramIndex++;
   }
 

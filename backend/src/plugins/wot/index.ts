@@ -20,12 +20,12 @@ export class WoTPlugin implements Plugin {
   version = '2.0.0';
   description = 'Web of Trust integration for Nostr content ranking (multi-provider)';
 
-  private provider: WoTProvider;
+  private provider!: WoTProvider;
   private cache: Map<string, { score: number; timestamp: number }> = new Map();
   private cacheTTL: number;
   private wotWeight: number;
   private enabled: boolean;
-  private context: PluginContext;
+  private context!: PluginContext;
 
   constructor(private config: WoTPluginConfig) {
     this.enabled = config.enabled ?? true;
@@ -65,7 +65,7 @@ export class WoTPlugin implements Plugin {
         }
       }
     } catch (error) {
-      context.logger.error(`WoT Plugin: Failed to initialize provider: ${error.message}`);
+      context.logger.error(`WoT Plugin: Failed to initialize provider: ${(error as Error).message}`);
       this.enabled = false;
     }
   }

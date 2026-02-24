@@ -3,39 +3,40 @@ version: '3.8'
 services:
   db:
     image: pgvector/pgvector:pg16
-    container_name: beacon-db
+    # container_name intentionally omitted
     environment:
-      POSTGRES_USER: beacon
-      POSTGRES_PASSWORD: beacon_secret
-      POSTGRES_DB: beacon_search
+      POSTGRES_USER: ${POSTGRES_USER:-beacon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-beacon_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-beacon_search}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/001_init.sql
+      - ./migrations/010_ux_bundle.sql:/docker-entrypoint-initdb.d/010_ux_bundle.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U beacon -d beacon_search"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beacon} -d ${POSTGRES_DB:-beacon_search}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
     build: ./backend
-    container_name: beacon-backend
+    # container_name intentionally omitted
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT:-3001}:3001"
     environment:
-      DATABASE_URL: postgresql://beacon:beacon_secret@db:5432/beacon_search
-      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-beacon}:${POSTGRES_PASSWORD:-beacon_secret}@db:5432/${POSTGRES_DB:-beacon_search}
+      PORT: ${PORT:-3001}
     depends_on:
       db:
         condition: service_healthy
 
   frontend:
     build: ./frontend
-    container_name: beacon-frontend
+    # container_name intentionally omitted
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
 

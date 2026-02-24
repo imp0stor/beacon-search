@@ -564,7 +564,7 @@ export class TVService {
       await this.pool.query(`
         INSERT INTO tv_episodes (
           series_id, season_id, season_number, episode_number, title, overview, air_date,
-          runtime_minutes, rating, image_url, external_ids, cast
+          runtime_minutes, rating, image_url, external_ids, "cast"
         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
         ON CONFLICT (series_id, season_number, episode_number) DO UPDATE SET
           title = COALESCE(EXCLUDED.title, tv_episodes.title),
@@ -574,7 +574,7 @@ export class TVService {
           rating = COALESCE(EXCLUDED.rating, tv_episodes.rating),
           image_url = COALESCE(EXCLUDED.image_url, tv_episodes.image_url),
           external_ids = COALESCE(tv_episodes.external_ids, '{}'::jsonb) || EXCLUDED.external_ids,
-          cast = COALESCE(EXCLUDED.cast, tv_episodes.cast),
+          "cast" = COALESCE(EXCLUDED."cast", tv_episodes."cast"),
           updated_at = NOW()
       `, [
         seriesId,

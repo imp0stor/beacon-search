@@ -1,4 +1,4 @@
-@import '../../../shared-ui/index.css';
+@import './shared-ui/index.css';
 @import './styles/tokens.css';
 @import './styles/primitives.css';
 

@@ -834,7 +834,7 @@ CREATE TABLE IF NOT EXISTS tv_episodes (
     rating FLOAT,
     image_url VARCHAR(2000),
     external_ids JSONB DEFAULT '{}',
-    cast JSONB DEFAULT '[]',
+    "cast" JSONB DEFAULT '[]',
     transcript_status VARCHAR(50) DEFAULT 'missing',
     transcript_updated_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),

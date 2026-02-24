@@ -96,6 +96,7 @@ export interface ExtractedDocument {
   url?: string;
   attributes?: Record<string, any>;
   lastModified?: Date;
+  content_type?: string;
 }
 
 export interface ConnectorEvents {

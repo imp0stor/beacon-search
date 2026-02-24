@@ -38,6 +38,24 @@ curl -X POST http://localhost:3001/api/generate-embeddings
 - Frontend: http://localhost:3000
 - API: http://localhost:3001
 
+## Runtime Verification (P1)
+
+```bash
+# From repo root
+cd backend && npm run build && npm test
+cd ../frontend && npm run build
+cd ..
+
+# Runs integration checks; auto-starts db+backend via docker if needed
+BOOTSTRAP_DOCKER=true ./test-p1-features.sh
+```
+
+Notes:
+- `test-p1-features.sh` checks `http://localhost:3001` by default.
+- `BOOTSTRAP_DOCKER=true` requires Docker and uses `docker-compose.yml` unless `COMPOSE_FILE` is set.
+- If default ports are occupied, set `DB_PORT`, `BACKEND_PORT`, `FRONTEND_PORT` before running.
+- DB credentials are aligned via `.env`/`.env.example` and compose defaults: `beacon / beacon_secret / beacon_search`.
+
 ## Connectors
 
 ### ⚡ Nostr Connector

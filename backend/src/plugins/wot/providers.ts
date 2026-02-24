@@ -37,14 +37,14 @@ export class NostrMaxiProvider implements WoTProvider {
   async getScore(fromPubkey: string, toPubkey: string): Promise<number> {
     try {
       const response = await fetch(`${this.baseURL}/api/v1/wot/score/${toPubkey}?from=${fromPubkey}`, {
-        timeout: 5000,
+        signal: AbortSignal.timeout(5000),
       });
       
       if (!response.ok) {
         return 0.1; // Default low score
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return data.wot_score || 0.1;
     } catch (error) {
       console.error('NostrMaxi API error:', error);
@@ -62,14 +62,14 @@ export class NostrMaxiProvider implements WoTProvider {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from_pubkey: fromPubkey, to_pubkeys: toPubkeys }),
-        timeout: 10000,
+        signal: AbortSignal.timeout(10000),
       });
 
       if (!response.ok) {
         return new Map();
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const scores = new Map<string, number>();
 
       if (Array.isArray(data)) {
@@ -87,7 +87,7 @@ export class NostrMaxiProvider implements WoTProvider {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseURL}/health`, { timeout: 2000 });
+      const response = await fetch(`${this.baseURL}/health`, { signal: AbortSignal.timeout(2000) });
       return response.ok;
     } catch (error) {
       return false;

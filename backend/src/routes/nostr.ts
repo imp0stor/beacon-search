@@ -75,6 +75,10 @@ export function createNostrRoutes(
         filters.tags = (req.query.tags as string).split(',');
       }
 
+      if (req.query.content_types) {
+        filters.content_types = (req.query.content_types as string).split(',');
+      }
+
       // Execute search
       const results = await searchNostrEvents(
         pool,

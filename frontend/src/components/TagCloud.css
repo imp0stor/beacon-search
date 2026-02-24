@@ -1,0 +1,277 @@
+/* TagCloud.css */
+
+.tag-cloud-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Breadcrumb Navigation */
+.tag-cloud-breadcrumb {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.breadcrumb-path {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.breadcrumb-root {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.breadcrumb-root:hover {
+  background: #eff6ff;
+  text-decoration: underline;
+}
+
+.breadcrumb-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+
+.breadcrumb-tag:hover {
+  background: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.breadcrumb-separator {
+  color: #9ca3af;
+  margin: 0 0.25rem;
+}
+
+.breadcrumb-clear-btn {
+  padding: 0.5rem 1rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.breadcrumb-clear-btn:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+/* Tag Cloud Title */
+.tag-cloud-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  letter-spacing: -0.5px;
+}
+
+/* Loading State */
+.tag-cloud-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: #6b7280;
+  font-size: 0.95rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Tag Cloud Grid */
+.tag-cloud-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tag-cloud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.tag-cloud-item:hover {
+  transform: scale(1.15) translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  opacity: 1 !important;
+  filter: brightness(1.1);
+}
+
+.tag-cloud-item:active {
+  transform: scale(0.95);
+}
+
+.tag-cloud-text {
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.tag-cloud-count {
+  font-size: 0.7em;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* Empty State */
+.tag-cloud-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  gap: 1rem;
+  color: #6b7280;
+  background: white;
+  border-radius: 8px;
+}
+
+.tag-cloud-empty p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.empty-state-reset {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.empty-state-reset:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+/* Error State */
+.tag-cloud-error {
+  padding: 1rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tag-cloud-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .tag-cloud-breadcrumb {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .breadcrumb-path {
+    width: 100%;
+  }
+
+  .breadcrumb-clear-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .tag-cloud-title {
+    font-size: 1.1rem;
+  }
+
+  .tag-cloud-item {
+    padding: 0.4rem 0.8rem;
+    font-size: 85%;
+  }
+
+  .tag-cloud-item:hover {
+    transform: scale(1.1) translateY(-1px);
+  }
+}
+
+@media (max-width: 480px) {
+  .tag-cloud-container {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .tag-cloud-grid {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .tag-cloud-item {
+    padding: 0.3rem 0.6rem;
+    font-size: 80%;
+  }
+
+  .breadcrumb-separator {
+    display: none;
+  }
+
+  .tag-cloud-item:hover {
+    transform: scale(1.05) translateY(-1px);
+  }
+}

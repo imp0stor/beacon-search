@@ -15,7 +15,7 @@ try {
 }
 
 async function applyMigration(migrationFile) {
-  const dbUrl = process.env.DATABASE_URL || 'postgresql://owner@localhost:5432/beacon_search';
+  const dbUrl = process.env.DATABASE_URL || 'postgresql://beacon:beacon_secret@localhost:5432/beacon_search';
   const pool = new Pool({
     connectionString: dbUrl
   });

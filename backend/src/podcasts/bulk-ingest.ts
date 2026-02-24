@@ -166,7 +166,7 @@ async function main() {
 
   const db = new Pool({
     connectionString:
-      process.env.DATABASE_URL || 'postgresql://owner@localhost:5432/beacon_search'
+      process.env.DATABASE_URL || 'postgresql://beacon:beacon_secret@localhost:5432/beacon_search'
   });
 
   let embedder: any = null;

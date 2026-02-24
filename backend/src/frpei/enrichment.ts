@@ -83,7 +83,7 @@ async function getTvEnrichment(pool: Pool, candidate: Candidate) {
   if (!candidate.title) return null;
   const episode = await pool.query(
     `SELECT e.id as episode_id, e.title as episode_title, e.season_number, e.episode_number, e.air_date,
-            e.cast, s.id as series_id, s.title as series_title, s.network
+            e."cast" as cast, s.id as series_id, s.title as series_title, s.network
      FROM tv_episodes e
      JOIN tv_series s ON s.id = e.series_id
      WHERE e.title ILIKE $1

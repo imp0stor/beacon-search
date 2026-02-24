@@ -1,0 +1,283 @@
+/**
+ * DocumentHeatmap.css
+ * Styles for paragraph-level zap heatmap visualization
+ */
+
+.heatmap-container {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.heatmap-header {
+  margin-bottom: 24px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 16px;
+}
+
+.heatmap-header h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: #333;
+}
+
+.heatmap-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.heatmap-stats .stat {
+  color: #666;
+}
+
+/* Legend */
+.heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+}
+
+/* Hotspots Section */
+.hotspots-section {
+  margin-bottom: 32px;
+}
+
+.hotspots-section h4 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: #333;
+}
+
+.hotspots-list {
+  display: grid;
+  gap: 8px;
+}
+
+.hotspot-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border-left: 4px solid #ddd;
+}
+
+.hotspot-rank {
+  font-weight: bold;
+  color: #0066ff;
+  font-size: 14px;
+  min-width: 30px;
+}
+
+.hotspot-heat {
+  width: 80px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: #333;
+  text-transform: capitalize;
+}
+
+.hotspot-info {
+  flex: 1;
+}
+
+.hotspot-para {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.hotspot-percent {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Paragraphs Section */
+.paragraphs-section {
+  margin-bottom: 32px;
+}
+
+.paragraphs-section h4 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: #333;
+}
+
+.paragraphs-list {
+  display: grid;
+  gap: 8px;
+}
+
+.paragraph-block {
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.paragraph-block:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.paragraph-index {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+  min-width: 60px;
+}
+
+.paragraph-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.para-zaps,
+.para-sats,
+.para-percent {
+  color: #666;
+  font-weight: 500;
+}
+
+/* Peak Section */
+.peak-section {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fff5e6 0%, #fff9f0 100%);
+  border-radius: 8px;
+  border: 2px solid #ffd700;
+}
+
+.peak-section h4 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: #333;
+}
+
+.peak-card {
+  background: white;
+  border-radius: 6px;
+  padding: 16px;
+  border: 2px solid #ffd700;
+}
+
+.peak-para {
+  font-weight: bold;
+  color: #ff8c00;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.peak-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.peak-stat {
+  text-align: center;
+  padding: 8px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.peak-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.peak-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff8c00;
+}
+
+/* Loading & Error States */
+.loading,
+.error,
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+  font-size: 14px;
+}
+
+.error {
+  color: #c33;
+  background: #fee;
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .heatmap-container {
+    padding: 16px;
+  }
+
+  .heatmap-legend {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .hotspot-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .paragraph-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .paragraph-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .peak-stats {
+    grid-template-columns: 1fr;
+  }
+}

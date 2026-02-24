@@ -5,7 +5,8 @@ import { pipeline, env } from '@xenova/transformers';
 import { ConnectorManager, createConnectorRoutes } from './connectors';
 import { WebhookManager, createWebhookRoutes } from './webhooks';
 import { SourcePortalManager, createSourcePortalRoutes } from './source-portal';
-import { processRoutes } from './routes';
+import { processRoutes, createUxRoutes } from './routes';
+import { createAnalyticsRoutes } from './routes/analytics';
 import { getConfig } from './processors';
 import { createWizardRoutes } from './wizard';
 import { rewriteQuery } from './search/query-rewrite';
@@ -16,6 +17,7 @@ import { createTvRoutes } from './tv/routes';
 import { createMovieRoutes } from './movies/routes';
 import { createMediaRoutes } from './media/routes';
 import { createFrpeiRoutes } from './frpei/routes';
+import { PluginManager, WoTPlugin, PluginContext, CacheClient } from './plugins';
 
 // Disable local model caching issues in Docker
 env.cacheDir = '/tmp/transformers-cache';
@@ -64,6 +66,52 @@ const sourcePortalManager = new SourcePortalManager(pool);
 
 // Export webhook manager for use in other modules
 export { webhookManager };
+
+// ============================================
+// PLUGIN MANAGER
+// ============================================
+
+// Simple in-memory cache implementing CacheClient
+const _pluginCache = new Map<string, { value: any; expires: number }>();
+const pluginCacheClient: CacheClient = {
+  async get(key: string) {
+    const entry = _pluginCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expires) { _pluginCache.delete(key); return null; }
+    return entry.value;
+  },
+  async set(key: string, value: any, ttl = 3600) {
+    _pluginCache.set(key, { value, expires: Date.now() + ttl * 1000 });
+  },
+  async del(key: string) {
+    _pluginCache.delete(key);
+  },
+};
+
+const pluginContext: PluginContext = {
+  db: pool,
+  config: {},
+  logger: {
+    info: (msg: string, ...args: any[]) => console.log('[plugin]', msg, ...args),
+    warn: (msg: string, ...args: any[]) => console.warn('[plugin]', msg, ...args),
+    error: (msg: string, ...args: any[]) => console.error('[plugin]', msg, ...args),
+    debug: (msg: string, ...args: any[]) => console.debug('[plugin]', msg, ...args),
+  },
+  cache: pluginCacheClient,
+};
+
+const wotConfig = {
+  enabled: process.env.WOT_ENABLED === 'true',
+  provider: (process.env.WOT_PROVIDER || 'local') as 'nostrmaxi' | 'local',
+  nostrmaxi_url: process.env.NOSTRMAXI_URL || 'http://localhost:3000',
+  weight: parseFloat(process.env.WOT_WEIGHT || '1.0'),
+  cache_ttl: parseInt(process.env.WOT_CACHE_TTL || '3600'),
+};
+
+const pluginManager = new PluginManager(pluginContext);
+pluginManager.register(new WoTPlugin(wotConfig));
+// Initialize plugins asynchronously (non-blocking startup)
+pluginManager.initAll().catch((err) => console.error('Plugin init failed:', err));
 
 // ============================================
 // TYPES
@@ -346,6 +394,9 @@ app.get('/api/search', async (req: Request, res: Response) => {
     const sourceId = req.query.sourceId as string;
     const explain = req.query.explain === 'true';
     const expand = req.query.expand !== 'false'; // Enable expansion by default
+    const user_pubkey = req.query.user_pubkey as string | undefined;
+    const wot_enabled = req.query.wot_enabled !== 'false';
+    const content_type = req.query.content_type as string | undefined;
 
     if (!query) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
@@ -524,6 +575,26 @@ app.get('/api/search', async (req: Request, res: Response) => {
       originalTerms: rewrite.originalTerms,
       weightedTerms: rewrite.weightedTerms
     });
+
+    // Apply plugin score modifications (e.g. WoT ranking)
+    if (user_pubkey && wot_enabled) {
+      const searchQuery = { text: query, user_pubkey };
+      processedResults = await Promise.all(
+        processedResults.map(async (doc) => {
+          const searchDoc = {
+            id: String(doc.id),
+            content: doc.content || '',
+            title: doc.title,
+            url: doc.url,
+            source: doc.source_id,
+            metadata: {},
+            author_pubkey: doc.author_pubkey,
+          };
+          const newScore = await pluginManager.modifySearchScore(searchDoc, searchQuery, doc.score);
+          return { ...doc, score: newScore };
+        })
+      );
+    }
 
     // Re-sort by score after trigger modifications
     processedResults = processedResults.sort((a, b) => b.score - a.score);
@@ -1478,6 +1549,14 @@ app.use('/api/media', createMediaRoutes(pool, generateEmbedding));
 
 // Mount FRPEI routes
 app.use('/api/frpei', createFrpeiRoutes(pool, generateEmbedding));
+
+// Mount UX bundle routes (tags, advanced search, quality scoring)
+const uxRouter = createUxRoutes(pool, generateEmbedding);
+app.use('/api', uxRouter);
+
+// Mount Analytics routes (author dashboards, zap heatmaps)
+const analyticsRouter = createAnalyticsRoutes(pool);
+app.use('/api', analyticsRouter);
 
 // Mount Nostr routes
 import { createNostrRoutes } from './routes/nostr';

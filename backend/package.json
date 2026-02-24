@@ -15,7 +15,9 @@
     "spider:adaptive": "ts-node src/ingestion/run-adaptive-crawler.ts",
     "spider:authors": "ts-node src/ingestion/run-author-crawler.ts",
     "podcast:bulk-ingest": "ts-node src/podcasts/bulk-ingest.ts",
-    "test:frpei": "npm run build && node --test tests/frpei-core.test.js tests/frpei.unit.test.js tests/frpei.smoke.test.js"
+    "test:frpei": "npm run build && node --test tests/frpei-core.test.js tests/frpei.unit.test.js tests/frpei.smoke.test.js",
+    "test:quality": "npm run build && node --test tests/quality.test.js",
+    "test": "npm run build && node --test tests/frpei-core.test.js tests/frpei.unit.test.js tests/frpei.smoke.test.js tests/quality.test.js"
   },
   "dependencies": {
     "@xenova/transformers": "^2.17.1",

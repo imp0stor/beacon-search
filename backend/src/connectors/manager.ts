@@ -283,9 +283,9 @@ export class ConnectorManager {
     await this.pool.query(`
       INSERT INTO documents (
         id, source_id, external_id, title, content, url, 
-        attributes, embedding, created_at, updated_at
+        attributes, embedding, content_type, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector, $9::content_type, NOW(), NOW())
       ON CONFLICT (source_id, external_id) 
       DO UPDATE SET
         title = EXCLUDED.title,
@@ -293,6 +293,7 @@ export class ConnectorManager {
         url = EXCLUDED.url,
         attributes = EXCLUDED.attributes,
         embedding = EXCLUDED.embedding,
+        content_type = EXCLUDED.content_type,
         updated_at = NOW()
     `, [
       uuidv4(),
@@ -302,7 +303,8 @@ export class ConnectorManager {
       doc.content,
       doc.url || null,
       doc.attributes ? JSON.stringify(doc.attributes) : null,
-      vectorStr
+      vectorStr,
+      doc.content_type || null,
     ]);
   }
 

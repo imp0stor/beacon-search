@@ -8,6 +8,7 @@ import { Connector, NostrConnectorConfig, ExtractedDocument } from './types';
 import { SimplePool, Event, Filter } from 'nostr-tools';
 import { parseNostrEvent, normalizeNostrEvent } from '../templates/nostr/parser';
 import { getSearchableKinds } from '../templates/nostr/kinds';
+import { kindToContentType } from '../services/contentTypeMapper';
 
 export class NostrConnector extends BaseConnector {
   private pool: SimplePool;
@@ -156,6 +157,7 @@ export class NostrConnector extends BaseConnector {
 
       const normalized = normalizeNostrEvent(parsed);
       
+      const contentType = kindToContentType(event.kind);
       return {
         externalId: normalized.externalId,
         title: normalized.title,
@@ -163,6 +165,7 @@ export class NostrConnector extends BaseConnector {
         url: normalized.url,
         attributes: normalized.attributes,
         lastModified: new Date(event.created_at * 1000),
+        ...(contentType ? { content_type: contentType } : {}),
       };
     } catch (error) {
       this.log(`Failed to process event ${event.id}: ${(error as Error).message}`);
