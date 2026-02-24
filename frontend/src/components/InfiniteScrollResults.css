@@ -44,32 +44,8 @@
 }
 
 @media (max-width: 768px) {
-  .infinite-scroll-container {
-    padding: 10px 0;
-  }
-
-  .results-header {
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px;
-  }
-
   .results-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .card-content {
-    padding: 12px;
-  }
-
-  .card-title {
-    font-size: 15px;
-  }
-
-  .load-more-btn {
-    min-height: 42px;
-    width: 100%;
   }
 }
 

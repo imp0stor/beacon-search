@@ -7,23 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MediaViewer from './MediaViewer';
 import './InfiniteScrollResults.css';
 
-const resolveApiUrl = () => {
-  const envApi = process.env.REACT_APP_API_URL;
-
-  if (typeof window === 'undefined') {
-    return envApi || 'http://localhost:3001';
-  }
-
-  if (envApi) {
-    const envIsLocal = /localhost|127\.0\.0\.1/.test(envApi);
-    const clientIsLocal = /localhost|127\.0\.0\.1/.test(window.location.hostname);
-    if (!(envIsLocal && !clientIsLocal)) return envApi;
-  }
-
-  return `${window.location.protocol}//${window.location.hostname}:3001`;
-};
-
-const API_URL = resolveApiUrl();
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function InfiniteScrollResults({ 
   query, 

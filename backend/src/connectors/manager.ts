@@ -274,6 +274,23 @@ export class ConnectorManager {
   }
 
   /**
+   * Get connector logs (current run + recent run history)
+   */
+  async getConnectorLogs(id: string, limit: number = 200): Promise<string[]> {
+    const current = this.getRunStatus(id);
+    if (current?.log?.length) {
+      return current.log.slice(-limit);
+    }
+
+    const history = await this.getRunHistory(id, 1);
+    if (!history.length || !history[0].log) {
+      return [];
+    }
+
+    return history[0].log.slice(-limit);
+  }
+
+  /**
    * Index a document
    */
   private async indexDocument(sourceId: string, doc: ExtractedDocument): Promise<void> {
@@ -312,54 +329,28 @@ export class ConnectorManager {
    * Save run history
    */
   private async saveRunHistory(connectorId: string, run: ConnectorRun): Promise<void> {
-    try {
-      await this.pool.query(`
-        INSERT INTO connector_runs (
-          id, connector_id, status, started_at, completed_at,
-          documents_added, documents_updated, documents_removed,
-          progress, total_items, processed_items, error_message, log
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-      `, [
-        run.id,
-        connectorId,
-        run.status,
-        run.startedAt,
-        run.completedAt,
-        run.documentsAdded,
-        run.documentsUpdated,
-        run.documentsRemoved,
-        run.progress,
-        run.totalItems,
-        run.processedItems,
-        run.errorMessage,
-        JSON.stringify(run.log)
-      ]);
-    } catch (error: any) {
-      const schemaMismatch = error?.code === '42703';
-      if (!schemaMismatch) throw error;
-
-      // Backward-compatible insert for older schemas that only have the core run-history columns.
-      await this.pool.query(`
-        INSERT INTO connector_runs (
-          id, connector_id, status, started_at, completed_at,
-          documents_added, documents_updated, documents_removed,
-          error_message, log
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      `, [
-        run.id,
-        connectorId,
-        run.status,
-        run.startedAt,
-        run.completedAt,
-        run.documentsAdded,
-        run.documentsUpdated,
-        run.documentsRemoved,
-        run.errorMessage,
-        JSON.stringify(run.log)
-      ]);
-    }
+    await this.pool.query(`
+      INSERT INTO connector_runs (
+        id, connector_id, status, started_at, completed_at,
+        documents_added, documents_updated, documents_removed,
+        progress, total_items, processed_items, error_message, log
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    `, [
+      run.id,
+      connectorId,
+      run.status,
+      run.startedAt,
+      run.completedAt,
+      run.documentsAdded,
+      run.documentsUpdated,
+      run.documentsRemoved,
+      run.progress,
+      run.totalItems,
+      run.processedItems,
+      run.errorMessage,
+      JSON.stringify(run.log)
+    ]);
   }
 
   /**

@@ -84,10 +84,10 @@ export function createConnectorRoutes(manager: ConnectorManager, webhookManager?
   });
 
   /**
-   * PUT /api/connectors/:id
+   * PUT/PATCH /api/connectors/:id
    * Update a connector
    */
-  router.put('/:id', async (req: Request, res: Response) => {
+  const updateConnectorHandler = async (req: Request, res: Response) => {
     try {
       const { name, description, config, isActive } = req.body;
 
@@ -115,7 +115,10 @@ export function createConnectorRoutes(manager: ConnectorManager, webhookManager?
       console.error('Error updating connector:', error);
       res.status(500).json({ error: 'Failed to update connector' });
     }
-  });
+  };
+
+  router.put('/:id', updateConnectorHandler);
+  router.patch('/:id', updateConnectorHandler);
 
   /**
    * DELETE /api/connectors/:id
@@ -216,6 +219,41 @@ export function createConnectorRoutes(manager: ConnectorManager, webhookManager?
   });
 
   /**
+   * GET /api/connectors/:id/logs
+   * Get connector logs (live or last run)
+   */
+  router.get('/:id/logs', async (req: Request, res: Response) => {
+    try {
+      const connector = await manager.getConnector(req.params.id);
+      if (!connector) {
+        return res.status(404).json({ error: 'Connector not found' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 200;
+      const level = (req.query.level as string | undefined)?.toLowerCase();
+      const logs = await manager.getConnectorLogs(req.params.id, limit);
+
+      const mapped = logs.map((line, idx) => {
+        const lower = line.toLowerCase();
+        const guessedLevel = lower.includes('error') ? 'error' : lower.includes('warn') ? 'warn' : 'info';
+        const tsMatch = line.match(/^\[(.*?)\]/);
+        return {
+          id: `${req.params.id}-${idx}`,
+          timestamp: tsMatch?.[1] || null,
+          level: guessedLevel,
+          message: line
+        };
+      });
+
+      const filtered = level ? mapped.filter((entry) => entry.level === level) : mapped;
+      res.json(filtered);
+    } catch (error) {
+      console.error('Error getting connector logs:', error);
+      res.status(500).json({ error: 'Failed to get logs' });
+    }
+  });
+
+  /**
    * GET /api/connectors/:id/history
    * Get run history
    */
@@ -274,8 +312,6 @@ function validateConfig(config: any): string | null {
       return validateFolderConfig(config);
     case 'sql':
       return validateSqlConfig(config);
-    case 'nostr':
-      return validateNostrConfig(config);
     default:
       return `Unknown connector type: ${config.type}`;
   }
@@ -337,30 +373,6 @@ function validateSqlConfig(config: any): string | null {
 
   if (!config.dataQuery) {
     return 'Data query is required for SQL connector';
-  }
-
-  return null;
-}
-
-function validateNostrConfig(config: any): string | null {
-  if (!config.relays || !Array.isArray(config.relays) || config.relays.length === 0) {
-    return 'Relays array is required for nostr connector';
-  }
-
-  for (const relay of config.relays) {
-    if (typeof relay !== 'string' || !relay.startsWith('wss://')) {
-      return `Invalid relay URL: ${relay}. Relay URLs must start with wss://`;
-    }
-  }
-
-  if (config.kinds !== undefined) {
-    if (!Array.isArray(config.kinds) || config.kinds.some((k: any) => !Number.isInteger(k) || k < 0)) {
-      return 'Kinds must be an array of non-negative integers';
-    }
-  }
-
-  if (config.limit !== undefined && (!Number.isInteger(config.limit) || config.limit < 1 || config.limit > 100000)) {
-    return 'Limit must be an integer between 1 and 100000';
   }
 
   return null;

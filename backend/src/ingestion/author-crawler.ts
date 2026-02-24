@@ -239,8 +239,8 @@ export class AuthorCrawler {
       const documentResult = await client.query(
         `INSERT INTO documents (
           title, content, url, document_type, 
-          last_modified, attributes
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+          last_modified, attributes, external_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (source_id, external_id) 
         WHERE source_id IS NOT NULL AND external_id IS NOT NULL
         DO UPDATE SET
@@ -258,7 +258,9 @@ export class AuthorCrawler {
             ...extracted.metadata,
             tags: extracted.tags,
             quality_score: extracted.quality_score,
+            author: event.pubkey, // Store pubkey for author display
           }),
+          event.id, // Set external_id to Nostr event ID
         ]
       );
       

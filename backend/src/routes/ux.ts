@@ -278,68 +278,6 @@ export function createUxRoutes(
   });
 
   // ============================================
-  // FACETS + STATUS COMPAT ENDPOINTS
-  // ============================================
-
-  /**
-   * GET /api/search/facets
-   * Compatibility endpoint for UX dashboard facets.
-   */
-  router.get('/search/facets', async (_req: Request, res: Response) => {
-    try {
-      const docsCountResult = await pool.query('SELECT COUNT(*)::int AS total FROM documents');
-      const totalDocuments = docsCountResult.rows[0]?.total || 0;
-
-      // Keep response shape stable for frontend optional rendering.
-      res.json({
-        entityTypes: {},
-        sentiment: [],
-        totalDocuments
-      });
-    } catch (error) {
-      console.error('Error fetching search facets:', error);
-      res.status(500).json({
-        error: 'Failed to fetch facets',
-        entityTypes: {},
-        sentiment: [],
-        totalDocuments: 0
-      });
-    }
-  });
-
-  /**
-   * GET /api/nlp/status
-   * Compatibility endpoint for NLP status cards.
-   */
-  router.get('/nlp/status', async (_req: Request, res: Response) => {
-    try {
-      const docsWithTagsResult = await pool.query(`
-        SELECT COUNT(DISTINCT d.id)::int AS documents_with_tags
-        FROM documents d
-        JOIN document_tags dt ON dt.document_id = d.id
-      `);
-      const totalDocsResult = await pool.query('SELECT COUNT(*)::int AS total_documents FROM documents');
-
-      res.json({
-        service: 'nlp',
-        status: 'ok',
-        processing: false,
-        total_documents: totalDocsResult.rows[0]?.total_documents || 0,
-        documents_with_tags: docsWithTagsResult.rows[0]?.documents_with_tags || 0
-      });
-    } catch (error) {
-      console.error('Error fetching NLP status:', error);
-      res.json({
-        service: 'nlp',
-        status: 'degraded',
-        processing: false,
-        total_documents: 0,
-        documents_with_tags: 0
-      });
-    }
-  });
-
-  // ============================================
   // TAG CO-OCCURRENCE / DRILL-DOWN ENDPOINTS
   // ============================================
 

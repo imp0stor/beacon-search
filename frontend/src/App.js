@@ -9,27 +9,7 @@ import TagCloud from './components/TagCloud.jsx';
 import TagFilterSidebar from './components/TagFilterSidebar.jsx';
 import InfiniteScrollResults from './components/InfiniteScrollResults.jsx';
 
-const resolveApiUrl = () => {
-  const envApi = process.env.REACT_APP_API_URL;
-
-  if (typeof window === 'undefined') {
-    return envApi || 'http://localhost:3001';
-  }
-
-  if (envApi) {
-    const envIsLocal = /localhost|127\.0\.0\.1/.test(envApi);
-    const clientIsLocal = /localhost|127\.0\.0\.1/.test(window.location.hostname);
-
-    // If bundle was built with localhost API but client is remote, auto-rewrite.
-    if (!(envIsLocal && !clientIsLocal)) {
-      return envApi;
-    }
-  }
-
-  return `${window.location.protocol}//${window.location.hostname}:3001`;
-};
-
-const API_URL = resolveApiUrl();
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const ENTITY_ICONS = {
   PERSON: '👤',
@@ -136,8 +116,6 @@ function App() {
 
   const [showBookshelf, setShowBookshelf] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showMobileInsights, setShowMobileInsights] = useState(false);
 
   const [activeWorkspace, setActiveWorkspace] = useState('search');
 
@@ -153,11 +131,6 @@ function App() {
       setNostrPubkey(savedPubkey);
     }
   }, []);
-
-  useEffect(() => {
-    setShowMobileFilters(false);
-    setShowMobileInsights(false);
-  }, [activeWorkspace]);
 
   const loadFacets = async () => {
     try {
@@ -176,9 +149,7 @@ function App() {
       const response = await fetch(`${API_URL}/api/tags/cloud?limit=30`);
       if (response.ok) {
         const data = await response.json();
-        // API may return either an array or an object wrapper { tags: [...] }
-        const tags = Array.isArray(data) ? data : Array.isArray(data?.tags) ? data.tags : [];
-        setTagCloud(tags);
+        setTagCloud(data);
       } else {
         // TODO: backend endpoint /api/tags/cloud not available; using local adapter instead.
         setTagCloud([]);
@@ -962,24 +933,6 @@ function App() {
               <button className="ghost-button ui-button" onClick={clearFilters} aria-label="Clear filters">
                 Clear Filters
               </button>
-              {activeWorkspace === 'search' && (
-                <button
-                  className="ghost-button ui-button mobile-only"
-                  onClick={() => setShowMobileFilters((prev) => !prev)}
-                  aria-label="Toggle filters panel"
-                  aria-pressed={showMobileFilters}
-                >
-                  {showMobileFilters ? 'Hide Filters' : 'Show Filters'}
-                </button>
-              )}
-              <button
-                className="ghost-button ui-button mobile-only"
-                onClick={() => setShowMobileInsights((prev) => !prev)}
-                aria-label="Toggle insights panel"
-                aria-pressed={showMobileInsights}
-              >
-                {showMobileInsights ? 'Hide Insights' : 'Show Insights'}
-              </button>
             </div>
           </div>
 
@@ -1107,19 +1060,17 @@ function App() {
                 </div>
               )}
 
-              <div className="search-layout">
-                <div className={`search-sidebar ${showMobileFilters ? 'mobile-open' : ''}`}>
-                  <TagFilterSidebar
-                    selectedTags={selectedTags}
-                    onTagToggle={toggleTag}
-                    onClearFilters={clearFilters}
-                    minQuality={minQuality}
-                    onMinQualityChange={setMinQuality}
-                    showMediaOnly={showMediaOnly}
-                    onShowMediaOnlyChange={setShowMediaOnly}
-                  />
-                </div>
-                <div className="search-results-pane">
+              <div className="search-layout" style={{ display: 'flex', gap: '0' }}>
+                <TagFilterSidebar
+                  selectedTags={selectedTags}
+                  onTagToggle={toggleTag}
+                  onClearFilters={clearFilters}
+                  minQuality={minQuality}
+                  onMinQualityChange={setMinQuality}
+                  showMediaOnly={showMediaOnly}
+                  onShowMediaOnlyChange={setShowMediaOnly}
+                />
+                <div style={{ marginLeft: '280px', flex: 1 }}>
                   <InfiniteScrollResults
                     query={query}
                     mode={searchMode}
@@ -1482,16 +1433,7 @@ function App() {
           </footer>
         </main>
 
-        <aside className={`context-panel ${showMobileInsights ? 'mobile-open' : ''}`}>
-          <div className="context-panel-mobile-actions">
-            <button
-              className="ghost-button ui-button"
-              onClick={() => setShowMobileInsights(false)}
-              aria-label="Close insights"
-            >
-              Close
-            </button>
-          </div>
+        <aside className="context-panel">
           <StatusPanel
             title="Active Filters"
             subtitle="Current search context."

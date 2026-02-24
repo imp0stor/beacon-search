@@ -1,16 +1,16 @@
 /* TagFilterSidebar Styles */
 
 .tag-filter-sidebar {
-  width: 100%;
-  max-width: 280px;
-  max-height: calc(100vh - 140px);
+  width: 280px;
+  height: 100vh;
   overflow-y: auto;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  padding: 16px;
-  position: sticky;
-  top: 92px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
   color: #fff;
 }
 
@@ -343,17 +343,10 @@
 /* Responsive */
 @media (max-width: 768px) {
   .tag-filter-sidebar {
-    max-width: 100%;
-    max-height: none;
-    position: static;
-    border-radius: 12px;
-    padding: 14px;
-  }
-
-  .tag-item,
-  .category-btn,
-  .clear-all-btn,
-  .selected-tag {
-    min-height: 40px;
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 }

@@ -290,36 +290,24 @@
   .media-viewer-container {
     width: 100vw;
     height: 100vh;
-    padding: 0 8px;
   }
 
   .media-viewer-close {
     top: 10px;
     right: 10px;
-    width: 44px;
-    height: 44px;
-  }
-
-  .media-viewer-nav {
-    width: 44px;
-    height: 44px;
-    font-size: 26px;
   }
 
   .media-viewer-info {
     bottom: 10px;
     padding: 8px 12px;
     font-size: 12px;
-    flex-wrap: wrap;
-    gap: 8px;
   }
 
   .media-viewer-thumbnails {
-    display: none;
+    display: none; /* Hide thumbnails on mobile */
   }
 
   .media-viewer-content {
-    height: calc(100% - 72px);
-    margin-bottom: 8px;
+    height: calc(100% - 60px);
   }
 }
