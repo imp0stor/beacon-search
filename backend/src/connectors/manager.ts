@@ -336,17 +336,17 @@ export class ConnectorManager {
         JSON.stringify(run.log)
       ]);
     } catch (error: any) {
-      const missingProgressColumn = error?.code === '42703' && /progress/.test(String(error?.message || ''));
-      if (!missingProgressColumn) throw error;
+      const schemaMismatch = error?.code === '42703';
+      if (!schemaMismatch) throw error;
 
-      // Backward-compatible insert for older schemas that do not yet have connector_runs.progress.
+      // Backward-compatible insert for older schemas that only have the core run-history columns.
       await this.pool.query(`
         INSERT INTO connector_runs (
           id, connector_id, status, started_at, completed_at,
           documents_added, documents_updated, documents_removed,
-          total_items, processed_items, error_message, log
+          error_message, log
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `, [
         run.id,
         connectorId,
@@ -356,8 +356,6 @@ export class ConnectorManager {
         run.documentsAdded,
         run.documentsUpdated,
         run.documentsRemoved,
-        run.totalItems,
-        run.processedItems,
         run.errorMessage,
         JSON.stringify(run.log)
       ]);

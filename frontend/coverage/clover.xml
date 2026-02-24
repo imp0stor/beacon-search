@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1771930724863" clover="3.2.0">
-  <project timestamp="1771930724863" name="All files">
+<coverage generated="1771930895985" clover="3.2.0">
+  <project timestamp="1771930895985" name="All files">
     <metrics statements="313" coveredstatements="227" conditionals="375" coveredconditionals="207" methods="99" coveredmethods="55" elements="787" coveredelements="489" complexity="0" loc="313" ncloc="313" packages="1" files="4" classes="4"/>
     <file name="InfiniteScrollResults.jsx" path="/home/neo/beacon-search/frontend/src/components/InfiniteScrollResults.jsx">
       <metrics statements="96" coveredstatements="74" conditionals="108" coveredconditionals="65" methods="22" coveredmethods="16"/>
