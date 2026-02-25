@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import './user.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || 'http://10.1.10.143:3001';
 
 const EXAMPLE_QUERIES = [
   'nostr protocol',
