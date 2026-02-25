@@ -28,7 +28,7 @@ export class NostrConnector extends BaseConnector {
   async testConnection(): Promise<boolean> {
     try {
       if (!this.relays.length) await this.connect();
-      const events = await this.relayPool.querySync(this.relays, [{ kinds: [1], limit: 1 }] as any);
+      const events = await this.relayPool.querySync(this.relays, { kinds: [1], limit: 1 } as any);
       return Array.isArray(events);
     } catch {
       return false;
@@ -47,7 +47,7 @@ export class NostrConnector extends BaseConnector {
       filter.since = Math.floor(since.getTime() / 1000);
     }
 
-    const events = await this.relayPool.querySync(this.relays, [filter] as any);
+    const events = await this.relayPool.querySync(this.relays, filter as any);
     return events.filter((evt) => evt.kind === 0 || evt.kind === 1);
   }
 

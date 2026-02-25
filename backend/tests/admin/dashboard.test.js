@@ -74,7 +74,7 @@ class FakePool {
       return { rows: [{ total: this.alerts.filter((a) => !a.acknowledged).length }] };
     }
 
-    if (q.startsWith("select coalesce(type, 'unknown') as type, count(*)::int as count from documents")) {
+    if (q.startsWith("select coalesce(document_type, 'unknown') as type, count(*)::int as count from documents")) {
       return { rows: [{ type: "unknown", count: this.documents.length }] };
     }
 

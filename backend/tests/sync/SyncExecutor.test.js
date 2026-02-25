@@ -3,12 +3,12 @@ const assert = require('node:assert');
 
 const { SyncExecutor } = require('../../dist/sync/SyncExecutor');
 const { ConnectorFactory } = require('../../dist/connectors/ConnectorFactory');
+const { NostrConnector } = require('../../dist/connectors/NostrConnector');
 
 class FakePool {
-  constructor({ failSync = false } = {}) {
-    this.failSync = failSync;
+  constructor({ crawler, server } = {}) {
     this.history = [];
-    this.crawler = {
+    this.crawler = crawler || {
       id: 'crawler-1',
       name: 'Products Crawl',
       type: 'product',
@@ -18,7 +18,7 @@ class FakePool {
       access_control: {},
       last_sync_at: null
     };
-    this.server = { id: 'server-1', type: 'postgresql' };
+    this.server = server || { id: 'server-1', type: 'postgresql' };
   }
 
   async query(sql, params = []) {
@@ -58,6 +58,42 @@ test('SyncExecutor executes crawler sync and records success', async () => {
     assert.equal(result.skipped, 1);
   } finally {
     ConnectorFactory.create = originalCreate;
+  }
+});
+
+test('SyncExecutor uses ConnectorFactory nostr path for nostr server', async () => {
+  const pool = new FakePool({
+    crawler: {
+      id: 'crawler-nostr',
+      name: 'Nostr Crawl',
+      type: 'external',
+      server_id: 'server-nostr',
+      extraction_config: { mode: 'incremental', limit: 5 },
+      property_mapping: {},
+      access_control: {},
+      last_sync_at: null
+    },
+    server: {
+      id: 'server-nostr',
+      type: 'nostr',
+      metadata: { relays: ['wss://relay.damus.io'] }
+    }
+  });
+
+  const originalSyncIncremental = NostrConnector.prototype.syncIncremental;
+  NostrConnector.prototype.syncIncremental = async function () {
+    return { fetched: 2, indexed: 2, skipped: 0 };
+  };
+
+  try {
+    const executor = new SyncExecutor(pool);
+    const result = await executor.executeCrawler('crawler-nostr', 'manual');
+    assert.equal(result.status, 'success');
+    assert.equal(result.fetched, 2);
+    assert.equal(result.indexed, 2);
+    assert.equal(result.skipped, 0);
+  } finally {
+    NostrConnector.prototype.syncIncremental = originalSyncIncremental;
   }
 });
 

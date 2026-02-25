@@ -41,7 +41,7 @@ export class DashboardController {
       ),
       this.pool.query("SELECT COUNT(*)::int AS total FROM system_alerts WHERE acknowledged = false"),
       this.pool.query(
-        "SELECT COALESCE(type, 'unknown') AS type, COUNT(*)::int AS count FROM documents GROUP BY COALESCE(type, 'unknown') ORDER BY COUNT(*) DESC LIMIT 20"
+        "SELECT COALESCE(document_type, 'unknown') AS type, COUNT(*)::int AS count FROM documents GROUP BY COALESCE(document_type, 'unknown') ORDER BY COUNT(*) DESC LIMIT 20"
       )
     ]);
 
