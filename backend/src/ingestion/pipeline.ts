@@ -4,7 +4,6 @@ import { RelayManager } from './relay-manager';
 import { DocumentTypeClassifier } from './document-classifier';
 import { ContentExtractorFactory } from './content-extractor';
 import { AntiSpamFilter } from './spam-filter';
-import { kindToContentType } from '../services/contentTypeMapper';
 
 export interface IngestionStrategy {
   name: string;
@@ -247,7 +246,6 @@ export class IngestionPipeline {
   
   private async indexEvent(event: NostrEvent, extracted: any): Promise<void> {
     const client = await this.db.connect();
-    const contentType = kindToContentType(event.kind);
     
     try {
       await client.query('BEGIN');
@@ -256,8 +254,8 @@ export class IngestionPipeline {
       const documentResult = await client.query(
         `INSERT INTO documents (
           title, content, url, document_type, 
-          last_modified, attributes, content_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7::content_type)
+          last_modified, attributes, external_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (source_id, external_id) 
         WHERE source_id IS NOT NULL AND external_id IS NOT NULL
         DO UPDATE SET
@@ -275,8 +273,9 @@ export class IngestionPipeline {
             ...extracted.metadata,
             tags: extracted.tags,
             quality_score: extracted.quality_score,
+            author: event.pubkey, // Store pubkey for author display
           }),
-          contentType,
+          event.id, // Set external_id to Nostr event ID
         ]
       );
       
@@ -286,11 +285,10 @@ export class IngestionPipeline {
       await client.query(
         `INSERT INTO nostr_events (
           document_id, event_id, pubkey, kind, event_created_at,
-          tags, event_metadata, quality_score, content_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::content_type)
+          tags, event_metadata, quality_score
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (event_id) DO UPDATE SET
           quality_score = EXCLUDED.quality_score,
-          content_type = EXCLUDED.content_type,
           indexed_at = NOW()`,
         [
           documentId,
@@ -301,7 +299,6 @@ export class IngestionPipeline {
           JSON.stringify(extracted.tags),
           JSON.stringify(extracted.metadata),
           extracted.quality_score,
-          contentType,
         ]
       );
       

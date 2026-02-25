@@ -128,8 +128,15 @@ export function createSearchRoutes(
       }
 
     } catch (error) {
+      const message = (error as Error).message || 'Search failed';
+      if (message.toLowerCase().includes('tsquery')) {
+        return res.status(400).json({
+          error: 'Invalid search syntax',
+          details: 'Please simplify your query or use plain keywords.'
+        });
+      }
       console.error('Search error:', error);
-      return res.status(500).json({ error: 'Search failed', details: (error as Error).message });
+      return res.status(500).json({ error: 'Search failed', details: message });
     }
   });
 

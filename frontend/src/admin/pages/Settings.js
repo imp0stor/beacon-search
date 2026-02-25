@@ -10,6 +10,7 @@ import {
 function Settings() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('general');
+  const [notice, setNotice] = useState(null);
 
   // Fetch settings
   const { data: settings, isLoading } = useQuery({
@@ -32,13 +33,14 @@ function Settings() {
     mutationFn: updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries(['settings']);
-      alert('Settings saved');
+      setNotice('Settings saved successfully.');
     },
   });
 
   const gitSyncMutation = useMutation({
     mutationFn: syncGitConfig,
-    onSuccess: () => alert('Git sync complete'),
+    onSuccess: () => setNotice('Git sync complete.'),
+    onError: (err) => setNotice(`Git sync failed: ${err.message}`),
   });
 
   if (isLoading) return <div className="admin-loading"><div className="admin-spinner"></div></div>;
@@ -52,10 +54,17 @@ function Settings() {
 
       <div className="admin-tabs">
         <button className={`admin-tab ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>General</button>
-        <button className={`admin-tab ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>AI & RAG</button>
+        <button className={`admin-tab ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>Ranking & Retrieval</button>
         <button className={`admin-tab ${activeTab === 'pipeline' ? 'active' : ''}`} onClick={() => setActiveTab('pipeline')}>Pipeline</button>
         <button className={`admin-tab ${activeTab === 'git' ? 'active' : ''}`} onClick={() => setActiveTab('git')}>Git Config</button>
       </div>
+
+      {notice && (
+        <div className="admin-card" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{notice}</span>
+          <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => setNotice(null)}>Dismiss</button>
+        </div>
+      )}
 
       <div className="admin-card">
         {activeTab === 'general' && (

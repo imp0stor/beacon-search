@@ -1,0 +1,915 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model connector_runs {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connector_id      String     @db.Uuid
+  status            String     @default("running") @db.VarChar(50)
+  started_at        DateTime   @default(now()) @db.Timestamptz(6)
+  completed_at      DateTime?  @db.Timestamptz(6)
+  documents_added   Int?       @default(0)
+  documents_updated Int?       @default(0)
+  documents_removed Int?       @default(0)
+  error_message     String?
+  log               Json?      @default("[]")
+  connectors        connectors @relation(fields: [connector_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([connector_id, started_at(sort: Desc)], map: "idx_connector_runs_connector")
+}
+
+model connectors {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String           @db.VarChar(255)
+  description         String?
+  connector_type      String           @db.VarChar(50)
+  config              Json             @default("{}")
+  portal_url          String?          @db.VarChar(2000)
+  item_url_template   String?          @db.VarChar(2000)
+  search_url_template String?          @db.VarChar(2000)
+  edit_url_template   String?          @db.VarChar(2000)
+  is_active           Boolean?         @default(true)
+  last_run_at         DateTime?        @db.Timestamptz(6)
+  last_run_status     String?          @db.VarChar(50)
+  created_at          DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?        @default(now()) @db.Timestamptz(6)
+  connector_runs      connector_runs[]
+  documents           documents[]
+
+  @@index([is_active], map: "idx_connectors_active")
+  @@index([connector_type], map: "idx_connectors_type")
+}
+
+model data_sources {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String         @db.VarChar(255)
+  description       String?
+  document_type     String         @unique @db.VarChar(255)
+  source_type       String         @default("postgresql") @db.VarChar(50)
+  connection_config Json           @default("{}")
+  metadata_query    String
+  data_query        String
+  permission_query  String?
+  permission_field  String?        @db.VarChar(255)
+  url_template      String?        @db.VarChar(2000)
+  sync_schedule     String?        @db.VarChar(100)
+  last_sync_at      DateTime?      @db.Timestamptz(6)
+  is_active         Boolean?       @default(true)
+  created_at        DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?      @default(now()) @db.Timestamptz(6)
+  sync_history      sync_history[]
+}
+
+model dictionary {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  term         String    @unique @db.VarChar(255)
+  synonyms     String[]  @default([])
+  acronym_for  String?   @db.VarChar(500)
+  domain       String?   @db.VarChar(100)
+  boost_weight Float?    @default(1.0)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([domain], map: "idx_dictionary_domain")
+  @@index([synonyms], map: "idx_dictionary_synonyms", type: Gin)
+  @@index([term], map: "idx_dictionary_term")
+}
+
+model document_entities {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id      String    @db.Uuid
+  entity_type      String    @db.VarChar(50)
+  entity_value     String    @db.VarChar(500)
+  normalized_value String?   @db.VarChar(500)
+  position_start   Int?
+  position_end     Int?
+  confidence       Float?    @default(1.0)
+  context          String?
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  documents        documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([document_id, entity_type, entity_value, position_start], map: "entity_position_unique")
+  @@index([document_id], map: "idx_entities_document")
+  @@index([normalized_value], map: "idx_entities_normalized")
+  @@index([entity_type], map: "idx_entities_type")
+  @@index([entity_type, normalized_value], map: "idx_entities_type_value")
+  @@index([entity_value], map: "idx_entities_value")
+}
+
+model document_metadata {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id  String    @db.Uuid
+  meta_key     String    @db.VarChar(100)
+  meta_value   String
+  meta_type    String?   @default("string") @db.VarChar(50)
+  confidence   Float?    @default(1.0)
+  extracted_by String?   @db.VarChar(100)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  documents    documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([document_id, meta_key])
+  @@index([document_id], map: "idx_metadata_document")
+  @@index([meta_key], map: "idx_metadata_key")
+  @@index([meta_key, meta_value], map: "idx_metadata_key_value")
+}
+
+model document_processing {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id                 String    @unique @db.Uuid
+  ocr_processed               Boolean?  @default(false)
+  ocr_processed_at            DateTime? @db.Timestamptz(6)
+  ocr_confidence              Float?
+  ocr_language                String?   @db.VarChar(10)
+  translation_processed       Boolean?  @default(false)
+  translation_processed_at    DateTime? @db.Timestamptz(6)
+  source_language             String?   @db.VarChar(10)
+  target_language             String?   @db.VarChar(10)
+  ai_description_processed    Boolean?  @default(false)
+  ai_description_processed_at DateTime? @db.Timestamptz(6)
+  ai_description_provider     String?   @db.VarChar(50)
+  original_content            String?
+  ocr_text                    String?
+  translated_text             String?
+  ai_description              String?
+  media_type                  String?   @db.VarChar(50)
+  media_metadata              Json?     @default("{}")
+  processing_errors           Json?     @default("[]")
+  created_at                  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime? @default(now()) @db.Timestamptz(6)
+  documents                   documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([document_id], map: "idx_doc_processing_document")
+  @@index([media_type], map: "idx_doc_processing_media_type")
+}
+
+model document_tags {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id String    @db.Uuid
+  tag         String    @db.VarChar(255)
+  confidence  Float?    @default(1.0)
+  source      String    @default("manual") @db.VarChar(50)
+  algorithm   String?   @db.VarChar(100)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  documents   documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([document_id, tag])
+  @@index([document_id], map: "idx_document_tags_document")
+  @@index([source], map: "idx_document_tags_source")
+  @@index([tag], map: "idx_document_tags_tag")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model documents {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_id             String?                @db.Uuid
+  external_id           String?                @db.VarChar(255)
+  document_type         String                 @default("manual") @db.VarChar(255)
+  title                 String                 @db.VarChar(500)
+  content               String
+  url                   String?                @db.VarChar(2000)
+  last_modified         DateTime?              @db.Timestamptz(6)
+  created_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  indexed_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  attributes            Json?                  @default("{}")
+  permission_groups     String[]               @default([])
+  embedding             Unsupported("vector")?
+  quality_score         Float?                 @default(0.5)
+  has_media             Boolean?               @default(false)
+  media_urls            Json?                  @default("[]")
+  document_entities     document_entities[]
+  document_metadata     document_metadata[]
+  document_processing   document_processing?
+  document_tags         document_tags[]
+  connectors            connectors?            @relation(fields: [source_id], references: [id], onUpdate: NoAction)
+  nlp_processing_status nlp_processing_status?
+  nostr_events          nostr_events[]
+  processing_queue      processing_queue[]
+
+  @@index([embedding], map: "idx_documents_embedding")
+  @@index([permission_groups], map: "idx_documents_permissions", type: Gin)
+  @@index([quality_score(sort: Desc)], map: "idx_documents_quality")
+  @@index([source_id], map: "idx_documents_source")
+  @@index([document_type], map: "idx_documents_type")
+}
+
+model entity_relationships {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entity_type      String    @db.VarChar(50)
+  normalized_value String    @db.VarChar(500)
+  document_ids     String[]  @db.Uuid
+  document_count   Int?      @default(0)
+  first_seen       DateTime? @default(now()) @db.Timestamptz(6)
+  last_updated     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([entity_type, normalized_value])
+  @@index([document_count(sort: Desc)], map: "idx_entity_rel_count")
+  @@index([document_ids], map: "idx_entity_rel_docs", type: Gin)
+  @@index([entity_type], map: "idx_entity_rel_type")
+  @@index([normalized_value], map: "idx_entity_rel_value")
+}
+
+model frpei_candidates {
+  id                String            @id @db.Uuid
+  request_id        String?           @db.Uuid
+  provider          String            @db.VarChar(50)
+  provider_ref      String?           @db.VarChar(255)
+  trust_tier        String?           @db.VarChar(20)
+  url               String?           @db.VarChar(2000)
+  canonical_url     String?           @db.VarChar(2000)
+  canonical_domain  String?           @db.VarChar(255)
+  title             String?           @db.VarChar(1000)
+  canonical_title   String?           @db.VarChar(1000)
+  snippet           String?
+  language          String?           @db.VarChar(50)
+  published_at      DateTime?         @db.Timestamptz(6)
+  retrieved_at      DateTime?         @db.Timestamptz(6)
+  content_type      String?           @db.VarChar(50)
+  raw               Json?             @default("{}")
+  signals           Json?             @default("{}")
+  entity_id         String?           @db.Uuid
+  entity_term       String?           @db.VarChar(500)
+  entity_confidence Float?
+  created_at        DateTime?         @default(now()) @db.Timestamptz(6)
+  ontology          ontology?         @relation(fields: [entity_id], references: [id], onUpdate: NoAction)
+  frpei_requests    frpei_requests?   @relation(fields: [request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  frpei_enrichment  frpei_enrichment?
+  frpei_rank_log    frpei_rank_log[]
+
+  @@index([canonical_url], map: "idx_frpei_candidates_canonical_url")
+  @@index([entity_id], map: "idx_frpei_candidates_entity")
+  @@index([request_id], map: "idx_frpei_candidates_request")
+}
+
+model frpei_enrichment {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidate_id      String           @unique @db.Uuid
+  entity_id         String?          @db.Uuid
+  topics            String[]         @default([])
+  taxonomy          Json?            @default("{}")
+  domain_enrichment Json?            @default("{}")
+  provenance        Json?            @default("{}")
+  confidence        Json?            @default("{}")
+  created_at        DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?        @default(now()) @db.Timestamptz(6)
+  frpei_candidates  frpei_candidates @relation(fields: [candidate_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ontology          ontology?        @relation(fields: [entity_id], references: [id], onUpdate: NoAction)
+}
+
+model frpei_feedback {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id     String?         @db.Uuid
+  candidate_id   String          @db.Uuid
+  provider       String?         @db.VarChar(50)
+  feedback       String          @db.VarChar(20)
+  rating         Float?
+  notes          String?
+  metadata       Json?           @default("{}")
+  created_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  frpei_requests frpei_requests? @relation(fields: [request_id], references: [id], onUpdate: NoAction)
+
+  @@index([candidate_id], map: "idx_frpei_feedback_candidate")
+  @@index([request_id], map: "idx_frpei_feedback_request")
+}
+
+model frpei_rank_log {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id       String?           @db.Uuid
+  candidate_id     String?           @db.Uuid
+  score            Float?
+  rank             Int?
+  signals          Json?             @default("{}")
+  created_at       DateTime?         @default(now()) @db.Timestamptz(6)
+  frpei_candidates frpei_candidates? @relation(fields: [candidate_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  frpei_requests   frpei_requests?   @relation(fields: [request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([request_id, rank], map: "idx_frpei_rank_request")
+}
+
+model frpei_requests {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  query            String
+  sources          String[]           @default([])
+  requested_limit  Int?
+  timeout_ms       Int?
+  cache_hit        Boolean?           @default(false)
+  provider_stats   Json?              @default("{}")
+  candidate_count  Int?               @default(0)
+  started_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  completed_at     DateTime?          @db.Timestamptz(6)
+  latency_ms       Int?
+  error            String?
+  frpei_candidates frpei_candidates[]
+  frpei_feedback   frpei_feedback[]
+  frpei_rank_log   frpei_rank_log[]
+
+  @@index([started_at(sort: Desc)], map: "idx_frpei_requests_started")
+}
+
+model movie_cast {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id       String       @db.Uuid
+  person_id      String       @db.Uuid
+  character_name String?      @db.VarChar(255)
+  billing_order  Int?
+  created_at     DateTime?    @default(now()) @db.Timestamptz(6)
+  movies         movies       @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  movie_people   movie_people @relation(fields: [person_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id], map: "idx_movie_cast_movie")
+  @@index([person_id], map: "idx_movie_cast_person")
+}
+
+model movie_collections {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String    @unique @db.VarChar(500)
+  overview     String?
+  image_url    String?   @db.VarChar(2000)
+  external_ids Json?     @default("{}")
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  movies       movies[]
+
+  @@index([name], map: "idx_movie_collections_name")
+}
+
+model movie_crew {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id     String       @db.Uuid
+  person_id    String       @db.Uuid
+  job          String?      @db.VarChar(255)
+  department   String?      @db.VarChar(255)
+  created_at   DateTime?    @default(now()) @db.Timestamptz(6)
+  movies       movies       @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  movie_people movie_people @relation(fields: [person_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id], map: "idx_movie_crew_movie")
+  @@index([person_id], map: "idx_movie_crew_person")
+}
+
+model movie_genre_links {
+  movie_id     String       @db.Uuid
+  genre_id     String       @db.Uuid
+  movie_genres movie_genres @relation(fields: [genre_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  movies       movies       @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([movie_id, genre_id])
+}
+
+model movie_genres {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String              @unique @db.VarChar(255)
+  external_ids      Json?               @default("{}")
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  movie_genre_links movie_genre_links[]
+
+  @@index([name], map: "idx_movie_genres_name")
+}
+
+model movie_ingest_runs {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id   String    @db.Uuid
+  status     String    @default("running") @db.VarChar(50)
+  started_at DateTime? @default(now()) @db.Timestamptz(6)
+  movies     movies    @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id, started_at(sort: Desc)], map: "idx_movie_ingest_runs_movie")
+}
+
+model movie_people {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String       @unique @db.VarChar(255)
+  external_ids Json?        @default("{}")
+  created_at   DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?    @default(now()) @db.Timestamptz(6)
+  movie_cast   movie_cast[]
+  movie_crew   movie_crew[]
+
+  @@index([name], map: "idx_movie_people_name")
+}
+
+model movie_providers {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id      String    @db.Uuid
+  provider_name String    @db.VarChar(255)
+  provider_type String    @db.VarChar(50)
+  region        String?   @db.VarChar(10)
+  provider_id   String?   @db.VarChar(100)
+  link          String?   @db.VarChar(2000)
+  metadata      Json?     @default("{}")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  movies        movies    @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id], map: "idx_movie_providers_movie")
+  @@index([provider_name], map: "idx_movie_providers_name")
+}
+
+model movie_subtitle_segments {
+  id                      String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variant_id              String                  @db.Uuid
+  start_ms                Int
+  end_ms                  Int
+  text                    String
+  movie_subtitle_variants movie_subtitle_variants @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([variant_id], map: "idx_movie_subtitle_segments_variant")
+}
+
+model movie_subtitle_variants {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id                String                    @db.Uuid
+  source_name             String                    @db.VarChar(255)
+  provider                String                    @db.VarChar(100)
+  url                     String?                   @db.VarChar(2000)
+  language                String?                   @db.VarChar(50)
+  format                  String?                   @db.VarChar(20)
+  reliability_weight      Float?                    @default(0.6)
+  metadata                Json?                     @default("{}")
+  created_at              DateTime?                 @default(now()) @db.Timestamptz(6)
+  movie_subtitle_segments movie_subtitle_segments[]
+  movies                  movies                    @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id], map: "idx_movie_subtitle_variants_movie")
+}
+
+model movie_transcript_segments {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id   String   @db.Uuid
+  start_ms   Int
+  end_ms     Int
+  text       String
+  confidence Float?   @default(0)
+  conflict   Boolean? @default(false)
+  sources    Json?    @default("[]")
+  movies     movies   @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id], map: "idx_movie_transcript_segments_movie")
+}
+
+model movie_transcripts {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movie_id        String    @unique @db.Uuid
+  transcript_text String
+  language        String?   @default("en") @db.VarChar(50)
+  consensus_score Float?    @default(0)
+  conflicts       Int?      @default(0)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+  movies          movies    @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([movie_id], map: "idx_movie_transcripts_movie")
+}
+
+model movies {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                     String                      @db.VarChar(500)
+  overview                  String?
+  status                    String?                     @db.VarChar(100)
+  release_date              DateTime?                   @db.Date
+  runtime_minutes           Int?
+  rating                    Float?
+  language                  String?                     @db.VarChar(50)
+  image_url                 String?                     @db.VarChar(2000)
+  collection_id             String?                     @db.Uuid
+  external_ids              Json?                       @default("{}")
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  movie_cast                movie_cast[]
+  movie_crew                movie_crew[]
+  movie_genre_links         movie_genre_links[]
+  movie_ingest_runs         movie_ingest_runs[]
+  movie_providers           movie_providers[]
+  movie_subtitle_variants   movie_subtitle_variants[]
+  movie_transcript_segments movie_transcript_segments[]
+  movie_transcripts         movie_transcripts?
+  movie_collections         movie_collections?          @relation(fields: [collection_id], references: [id], onUpdate: NoAction)
+
+  @@unique([title, release_date])
+  @@index([release_date], map: "idx_movies_release_date")
+  @@index([title], map: "idx_movies_title")
+}
+
+model nlp_processing_status {
+  document_id              String    @id @db.Uuid
+  tags_extracted           Boolean?  @default(false)
+  tags_extracted_at        DateTime? @db.Timestamptz(6)
+  entities_extracted       Boolean?  @default(false)
+  entities_extracted_at    DateTime? @db.Timestamptz(6)
+  metadata_extracted       Boolean?  @default(false)
+  metadata_extracted_at    DateTime? @db.Timestamptz(6)
+  relationships_updated    Boolean?  @default(false)
+  relationships_updated_at DateTime? @db.Timestamptz(6)
+  last_error               String?
+  processing_version       Int?      @default(1)
+  documents                documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model nostr_events {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id      String?    @db.Uuid
+  event_id         String     @unique
+  pubkey           String
+  kind             Int
+  event_created_at DateTime   @db.Timestamp(6)
+  tags             Json?
+  event_metadata   Json?
+  quality_score    Float?
+  indexed_at       DateTime?  @default(now()) @db.Timestamp(6)
+  documents        documents? @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([event_created_at(sort: Desc)], map: "idx_nostr_events_created_at")
+  @@index([document_id], map: "idx_nostr_events_document")
+  @@index([kind], map: "idx_nostr_events_kind")
+  @@index([pubkey], map: "idx_nostr_events_pubkey")
+  @@index([quality_score(sort: Desc)], map: "idx_nostr_events_quality")
+}
+
+model ontology {
+  id                                                        String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parent_id                                                 String?                       @db.Uuid
+  term                                                      String                        @unique @db.VarChar(255)
+  description                                               String?
+  synonyms                                                  String[]                      @default([])
+  created_at                                                DateTime?                     @default(now()) @db.Timestamptz(6)
+  updated_at                                                DateTime?                     @default(now()) @db.Timestamptz(6)
+  frpei_candidates                                          frpei_candidates[]
+  frpei_enrichment                                          frpei_enrichment[]
+  ontology                                                  ontology?                     @relation("ontologyToontology", fields: [parent_id], references: [id], onUpdate: NoAction)
+  other_ontology                                            ontology[]                    @relation("ontologyToontology")
+  ontology_aliases                                          ontology_aliases[]
+  ontology_concept_taxonomies                               ontology_concept_taxonomies[]
+  ontology_relations_ontology_relations_source_idToontology ontology_relations[]          @relation("ontology_relations_source_idToontology")
+  ontology_relations_ontology_relations_target_idToontology ontology_relations[]          @relation("ontology_relations_target_idToontology")
+
+  @@index([parent_id], map: "idx_ontology_parent")
+  @@index([synonyms], map: "idx_ontology_synonyms", type: Gin)
+  @@index([term], map: "idx_ontology_term")
+}
+
+model ontology_aliases {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  concept_id String    @db.Uuid
+  alias      String    @db.VarChar(255)
+  alias_type String    @default("synonym") @db.VarChar(50)
+  weight     Float?    @default(1.0)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  ontology   ontology  @relation(fields: [concept_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([concept_id, alias])
+  @@index([alias], map: "idx_ontology_aliases_alias")
+  @@index([alias_type], map: "idx_ontology_aliases_type")
+}
+
+model ontology_concept_taxonomies {
+  concept_id          String              @db.Uuid
+  taxonomy_id         String              @db.Uuid
+  rank                Int?                @default(0)
+  ontology            ontology            @relation(fields: [concept_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ontology_taxonomies ontology_taxonomies @relation(fields: [taxonomy_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([concept_id, taxonomy_id])
+  @@index([taxonomy_id], map: "idx_ontology_concept_taxonomies_taxonomy")
+}
+
+model ontology_relations {
+  id                                              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_id                                       String    @db.Uuid
+  target_id                                       String    @db.Uuid
+  relation_type                                   String    @db.VarChar(30)
+  weight                                          Float?    @default(1.0)
+  created_at                                      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime? @default(now()) @db.Timestamptz(6)
+  ontology_ontology_relations_source_idToontology ontology  @relation("ontology_relations_source_idToontology", fields: [source_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ontology_ontology_relations_target_idToontology ontology  @relation("ontology_relations_target_idToontology", fields: [target_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_id, target_id, relation_type])
+  @@index([source_id], map: "idx_ontology_relations_source")
+  @@index([target_id], map: "idx_ontology_relations_target")
+  @@index([relation_type], map: "idx_ontology_relations_type")
+}
+
+model ontology_taxonomies {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                        String                        @unique @db.VarChar(100)
+  description                 String?
+  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  ontology_concept_taxonomies ontology_concept_taxonomies[]
+}
+
+model podcast_episodes {
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_id             String               @db.Uuid
+  guid                  String               @db.VarChar(1000)
+  title                 String               @db.VarChar(500)
+  episode_url           String?              @db.VarChar(2000)
+  audio_url             String?              @db.VarChar(2000)
+  published_at          DateTime?            @db.Timestamptz(6)
+  season_number         Int?
+  episode_number        Int?
+  duration_seconds      Int?
+  summary               String?
+  transcript_url        String?              @db.VarChar(2000)
+  transcript_status     String?              @default("missing") @db.VarChar(50)
+  transcript_source     String?              @db.VarChar(50)
+  transcript_updated_at DateTime?            @db.Timestamptz(6)
+  created_at            DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?            @default(now()) @db.Timestamptz(6)
+  podcast_sources       podcast_sources      @relation(fields: [source_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  podcast_transcripts   podcast_transcripts?
+
+  @@unique([source_id, guid])
+  @@index([published_at(sort: Desc)], map: "idx_podcast_episodes_published")
+  @@index([source_id], map: "idx_podcast_episodes_source")
+}
+
+model podcast_ingest_runs {
+  id                      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_id               String          @db.Uuid
+  status                  String          @default("running") @db.VarChar(50)
+  started_at              DateTime?       @default(now()) @db.Timestamptz(6)
+  completed_at            DateTime?       @db.Timestamptz(6)
+  episodes_discovered     Int?            @default(0)
+  episodes_updated        Int?            @default(0)
+  transcripts_created     Int?            @default(0)
+  transcripts_transcribed Int?            @default(0)
+  errors                  Json?           @default("[]")
+  podcast_sources         podcast_sources @relation(fields: [source_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([source_id, started_at(sort: Desc)], map: "idx_podcast_ingest_runs_source")
+}
+
+model podcast_sources {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title               String                @db.VarChar(500)
+  rss_url             String                @unique @db.VarChar(2000)
+  site_url            String?               @db.VarChar(2000)
+  description         String?
+  language            String?               @db.VarChar(50)
+  categories          String[]              @default([])
+  image_url           String?               @db.VarChar(2000)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  podcast_episodes    podcast_episodes[]
+  podcast_ingest_runs podcast_ingest_runs[]
+
+  @@index([title], map: "idx_podcast_sources_title")
+}
+
+model podcast_transcripts {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  episode_id       String           @unique @db.Uuid
+  transcript_text  String
+  word_count       Int?
+  language         String?          @db.VarChar(50)
+  source           String?          @default("provided") @db.VarChar(50)
+  created_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  podcast_episodes podcast_episodes @relation(fields: [episode_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([episode_id], map: "idx_podcast_transcripts_episode")
+}
+
+model processing_queue {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id   String    @db.Uuid
+  file_path     String?
+  file_type     String?   @db.VarChar(50)
+  priority      Int?      @default(0)
+  status        String?   @default("pending") @db.VarChar(50)
+  options       Json?     @default("{}")
+  result        Json?
+  error_message String?
+  scheduled_at  DateTime? @default(now()) @db.Timestamptz(6)
+  started_at    DateTime? @db.Timestamptz(6)
+  completed_at  DateTime? @db.Timestamptz(6)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  documents     documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([document_id], map: "idx_processing_queue_document")
+  @@index([status, priority(sort: Desc), scheduled_at], map: "idx_processing_queue_status")
+}
+
+model sync_history {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_id         String       @db.Uuid
+  started_at        DateTime     @default(now()) @db.Timestamptz(6)
+  completed_at      DateTime?    @db.Timestamptz(6)
+  status            String       @default("running") @db.VarChar(50)
+  documents_added   Int?         @default(0)
+  documents_updated Int?         @default(0)
+  documents_removed Int?         @default(0)
+  error_message     String?
+  data_sources      data_sources @relation(fields: [source_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_id, started_at], map: "sync_history_source_time_idx")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tags {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  category   String?
+  count      Int?      @default(0)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([category], map: "idx_tags_category")
+  @@index([count(sort: Desc)], map: "idx_tags_count")
+  @@index([name], map: "idx_tags_name")
+}
+
+model triggers {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @unique @db.VarChar(255)
+  pattern     String    @db.VarChar(1000)
+  conditions  Json?     @default("{}")
+  actions     Json
+  priority    Int?      @default(0)
+  enabled     Boolean?  @default(true)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([enabled, priority(sort: Desc)], map: "idx_triggers_enabled")
+  @@index([name], map: "idx_triggers_name")
+}
+
+model tv_episode_subtitle_segments {
+  id                           String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variant_id                   String                       @db.Uuid
+  start_ms                     Int
+  end_ms                       Int
+  text                         String
+  tv_episode_subtitle_variants tv_episode_subtitle_variants @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([variant_id], map: "idx_tv_subtitle_segments_variant")
+}
+
+model tv_episode_subtitle_variants {
+  id                           String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  episode_id                   String                         @db.Uuid
+  source_name                  String                         @db.VarChar(255)
+  provider                     String                         @db.VarChar(100)
+  url                          String?                        @db.VarChar(2000)
+  language                     String?                        @db.VarChar(50)
+  format                       String?                        @db.VarChar(20)
+  reliability_weight           Float?                         @default(0.6)
+  metadata                     Json?                          @default("{}")
+  created_at                   DateTime?                      @default(now()) @db.Timestamptz(6)
+  tv_episode_subtitle_segments tv_episode_subtitle_segments[]
+  tv_episodes                  tv_episodes                    @relation(fields: [episode_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([episode_id], map: "idx_tv_subtitle_variants_episode")
+}
+
+model tv_episode_transcript_segments {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  episode_id  String      @db.Uuid
+  start_ms    Int
+  end_ms      Int
+  text        String
+  confidence  Float?      @default(0)
+  conflict    Boolean?    @default(false)
+  sources     Json?       @default("[]")
+  tv_episodes tv_episodes @relation(fields: [episode_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([episode_id], map: "idx_tv_transcript_segments_episode")
+}
+
+model tv_episode_transcripts {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  episode_id      String      @unique @db.Uuid
+  transcript_text String
+  language        String?     @default("en") @db.VarChar(50)
+  consensus_score Float?      @default(0)
+  conflicts       Int?        @default(0)
+  created_at      DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?   @default(now()) @db.Timestamptz(6)
+  tv_episodes     tv_episodes @relation(fields: [episode_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([episode_id], map: "idx_tv_transcripts_episode")
+}
+
+model tv_episodes {
+  id                             String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  series_id                      String                           @db.Uuid
+  season_id                      String?                          @db.Uuid
+  season_number                  Int
+  episode_number                 Int
+  title                          String                           @db.VarChar(500)
+  overview                       String?
+  air_date                       DateTime?                        @db.Date
+  runtime_minutes                Int?
+  rating                         Float?
+  image_url                      String?                          @db.VarChar(2000)
+  external_ids                   Json?                            @default("{}")
+  cast                           Json?                            @default("[]")
+  transcript_status              String?                          @default("missing") @db.VarChar(50)
+  transcript_updated_at          DateTime?                        @db.Timestamptz(6)
+  created_at                     DateTime?                        @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime?                        @default(now()) @db.Timestamptz(6)
+  tv_episode_subtitle_variants   tv_episode_subtitle_variants[]
+  tv_episode_transcript_segments tv_episode_transcript_segments[]
+  tv_episode_transcripts         tv_episode_transcripts?
+  tv_seasons                     tv_seasons?                      @relation(fields: [season_id], references: [id], onUpdate: NoAction)
+  tv_series                      tv_series                        @relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([series_id, season_number, episode_number])
+  @@index([air_date], map: "idx_tv_episodes_airdate")
+  @@index([series_id], map: "idx_tv_episodes_series")
+}
+
+model tv_ingest_runs {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  series_id  String    @db.Uuid
+  status     String    @default("running") @db.VarChar(50)
+  started_at DateTime? @default(now()) @db.Timestamptz(6)
+  tv_series  tv_series @relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([series_id, started_at(sort: Desc)], map: "idx_tv_ingest_runs_series")
+}
+
+model tv_seasons {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  series_id     String        @db.Uuid
+  season_number Int
+  title         String?       @db.VarChar(500)
+  overview      String?
+  air_date      DateTime?     @db.Date
+  episode_count Int?
+  image_url     String?       @db.VarChar(2000)
+  created_at    DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?     @default(now()) @db.Timestamptz(6)
+  tv_episodes   tv_episodes[]
+  tv_series     tv_series     @relation(fields: [series_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([series_id, season_number])
+  @@index([series_id], map: "idx_tv_seasons_series")
+}
+
+model tv_series {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String           @unique @db.VarChar(500)
+  overview       String?
+  status         String?          @db.VarChar(100)
+  network        String?          @db.VarChar(255)
+  genres         String[]         @default([])
+  language       String?          @db.VarChar(50)
+  first_air_date DateTime?        @db.Date
+  last_air_date  DateTime?        @db.Date
+  image_url      String?          @db.VarChar(2000)
+  external_ids   Json?            @default("{}")
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  tv_episodes    tv_episodes[]
+  tv_ingest_runs tv_ingest_runs[]
+  tv_seasons     tv_seasons[]
+
+  @@index([title], map: "idx_tv_series_title")
+}
+
+model webhook_deliveries {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  webhook_id      String    @db.Uuid
+  event           String    @db.VarChar(100)
+  payload         Json
+  status          String    @default("pending") @db.VarChar(20)
+  attempts        Int?      @default(0)
+  last_attempt_at DateTime? @db.Timestamptz(6)
+  response_status Int?
+  response_body   String?
+  error_message   String?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  webhooks        webhooks  @relation(fields: [webhook_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([webhook_id, created_at(sort: Desc)], map: "idx_webhook_deliveries_webhook")
+}
+
+model webhooks {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String               @db.VarChar(255)
+  url                String               @db.VarChar(2000)
+  events             String[]             @default([])
+  headers            Json?                @default("{}")
+  enabled            Boolean?             @default(true)
+  secret             String               @db.VarChar(255)
+  last_triggered_at  DateTime?            @db.Timestamptz(6)
+  last_status        Int?
+  failure_count      Int?                 @default(0)
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  webhook_deliveries webhook_deliveries[]
+
+  @@index([enabled], map: "idx_webhooks_enabled")
+  @@index([events], map: "idx_webhooks_events", type: Gin)
+}

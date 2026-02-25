@@ -390,6 +390,8 @@ app.get('/api/search', async (req: Request, res: Response) => {
   try {
     const query = req.query.q as string;
     const limit = parseInt(req.query.limit as string) || 10;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const fetchLimit = Math.max(limit + offset, limit);
     const mode = req.query.mode as string || 'hybrid';
     const sourceId = req.query.sourceId as string;
     const explain = req.query.explain === 'true';
@@ -452,13 +454,13 @@ app.get('/api/search', async (req: Request, res: Response) => {
       const vectorStr = `[${embedding.join(',')}]`;
       
       const queryText = sourceId 
-        ? `SELECT id, title, content, url, source_id, document_type,
+        ? `SELECT id, title, content, url, source_id, document_type, external_id, attributes, created_at, last_modified,
                   1 - (embedding <=> $1::vector) as score
            FROM documents
            WHERE embedding IS NOT NULL AND source_id = $3
            ORDER BY embedding <=> $1::vector
            LIMIT $2`
-        : `SELECT id, title, content, url, source_id, document_type,
+        : `SELECT id, title, content, url, source_id, document_type, external_id, attributes, created_at, last_modified,
                   1 - (embedding <=> $1::vector) as score
            FROM documents
            WHERE embedding IS NOT NULL
@@ -466,20 +468,20 @@ app.get('/api/search', async (req: Request, res: Response) => {
            LIMIT $2`;
       
       results = await pool.query(queryText, 
-        sourceId ? [vectorStr, limit, sourceId] : [vectorStr, limit]
+        sourceId ? [vectorStr, fetchLimit, sourceId] : [vectorStr, fetchLimit]
       );
 
     } else if (mode === 'text') {
       // Pure text search with expanded query
       const queryText = sourceId
-        ? `SELECT id, title, content, url, source_id, document_type,
+        ? `SELECT id, title, content, url, source_id, document_type, external_id, attributes, created_at, last_modified,
                   ts_rank(to_tsvector('english', content || ' ' || title), to_tsquery('english', $1)) as score
            FROM documents
            WHERE to_tsvector('english', content || ' ' || title) @@ to_tsquery('english', $1)
              AND source_id = $3
            ORDER BY score DESC
            LIMIT $2`
-        : `SELECT id, title, content, url, source_id, document_type,
+        : `SELECT id, title, content, url, source_id, document_type, external_id, attributes, created_at, last_modified,
                   ts_rank(to_tsvector('english', content || ' ' || title), to_tsquery('english', $1)) as score
            FROM documents
            WHERE to_tsvector('english', content || ' ' || title) @@ to_tsquery('english', $1)
@@ -488,7 +490,7 @@ app.get('/api/search', async (req: Request, res: Response) => {
       
       const safeTextQuery = textQueryText || buildFallbackTsQuery(query);
       results = await pool.query(queryText,
-        sourceId ? [safeTextQuery, limit, sourceId] : [safeTextQuery, limit]
+        sourceId ? [safeTextQuery, fetchLimit, sourceId] : [safeTextQuery, fetchLimit]
       );
 
     } else {
@@ -507,7 +509,7 @@ app.get('/api/search', async (req: Request, res: Response) => {
              FROM documents
              WHERE source_id = $4
            )
-           SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type,
+           SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type, d.external_id, d.attributes, d.created_at, d.last_modified,
                   COALESCE(v.vscore, 0) * 0.7 + COALESCE(t.tscore, 0) * 0.3 as score
            FROM documents d
            LEFT JOIN vector_scores v ON d.id = v.id
@@ -524,7 +526,7 @@ app.get('/api/search', async (req: Request, res: Response) => {
              SELECT id, ts_rank(to_tsvector('english', content || ' ' || title), to_tsquery('english', $2)) as tscore
              FROM documents
            )
-           SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type,
+           SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type, d.external_id, d.attributes, d.created_at, d.last_modified,
                   COALESCE(v.vscore, 0) * 0.7 + COALESCE(t.tscore, 0) * 0.3 as score
            FROM documents d
            LEFT JOIN vector_scores v ON d.id = v.id
@@ -534,7 +536,7 @@ app.get('/api/search', async (req: Request, res: Response) => {
       
       const safeTextQuery = textQueryText || buildFallbackTsQuery(query);
       results = await pool.query(queryText,
-        sourceId ? [vectorStr, safeTextQuery, limit, sourceId] : [vectorStr, safeTextQuery, limit]
+        sourceId ? [vectorStr, safeTextQuery, fetchLimit, sourceId] : [vectorStr, safeTextQuery, fetchLimit]
       );
     }
 
@@ -599,11 +601,28 @@ app.get('/api/search', async (req: Request, res: Response) => {
     // Re-sort by score after trigger modifications
     processedResults = processedResults.sort((a, b) => b.score - a.score);
 
+    const enrichedResults = processedResults.map((doc) => {
+      const content = doc.content || '';
+      const title = (doc.title || '').toLowerCase();
+      const qLower = query.toLowerCase();
+      let match_reason = 'semantic similarity';
+      if (title.includes(qLower)) match_reason = 'title keyword match';
+      else if (content.toLowerCase().includes(qLower)) match_reason = 'content keyword match';
+
+      return {
+        ...doc,
+        snippet: content.slice(0, 200),
+        author: doc.author || doc.attributes?.author || null,
+        source_name: doc.source_name || doc.attributes?.source_name || doc.source_id || null,
+        match_reason
+      };
+    });
+
     const response: any = {
       query,
       mode,
-      count: processedResults.length,
-      results: processedResults.slice(0, limit)
+      count: enrichedResults.length,
+      results: enrichedResults.slice(offset, offset + limit)
     };
     
     if (explain) {

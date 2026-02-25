@@ -34,6 +34,7 @@ function SourcesManagement() {
   const [editingSource, setEditingSource] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // list | detail | history | samples
   const [testResult, setTestResult] = useState(null);
+  const [actionNotice, setActionNotice] = useState(null);
 
   // Fetch sources list
   const { data: sources, isLoading } = useQuery({
@@ -102,8 +103,9 @@ function SourcesManagement() {
     mutationFn: triggerSourceSync,
     onSuccess: () => {
       queryClient.invalidateQueries(['sources']);
-      alert('Sync triggered successfully');
+      setActionNotice('Sync started. Source status will update automatically.');
     },
+    onError: (err) => setError(`Unable to trigger sync: ${err.message}`),
   });
 
   const getStatusColor = (status) => {
@@ -193,7 +195,7 @@ function SourcesManagement() {
               />
             </div>
             <div className="admin-form-group">
-              <label className="admin-label">Max Depth</label>
+              <label className="admin-label" title="How many link levels Beacon will follow from the start URL">Max Depth</label>
               <input
                 type="number"
                 className="admin-input"
@@ -272,7 +274,7 @@ function SourcesManagement() {
         )}
 
         <div className="admin-form-group">
-          <label className="admin-label">Sync Schedule (Cron)</label>
+          <label className="admin-label" title="Cron expression for automatic sync runs">Sync Schedule (Cron)</label>
           <input
             type="text"
             className="admin-input"
@@ -326,6 +328,19 @@ function SourcesManagement() {
           <span>➕</span> Add Source
         </button>
       </div>
+
+      {actionNotice && (
+        <div className="admin-card" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', color: 'var(--admin-accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{actionNotice}</span>
+          <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => setActionNotice(null)}>Dismiss</button>
+        </div>
+      )}
+
+      {error && (
+        <div className="admin-card" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', color: 'var(--admin-danger)' }} role="alert">
+          {error}
+        </div>
+      )}
 
       {/* Sources List */}
       {isLoading ? (
@@ -392,15 +407,18 @@ function SourcesManagement() {
                             onClick={() => syncMutation.mutate(source.id)}
                             disabled={syncMutation.isPending || source.status === 'syncing'}
                             title="Trigger sync"
+                            aria-label="Trigger source sync"
                           >
-                            🔄
+                            {syncMutation.isPending ? '⏳' : '🔄'}
                           </button>
                           <button
                             className="admin-btn admin-btn-ghost admin-btn-sm"
                             onClick={() => testMutation.mutate(source.id)}
+                            disabled={testMutation.isPending}
                             title="Test connection"
+                            aria-label="Test source connection"
                           >
-                            🧪
+                            {testMutation.isPending ? '⏳' : '🧪'}
                           </button>
                           <button
                             className="admin-btn admin-btn-ghost admin-btn-sm"

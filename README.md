@@ -1,5 +1,7 @@
 # Beacon Search MVP
 
+> Current beta deployment: Frontend `http://10.1.10.143:3002` · API `http://10.1.10.143:3001`
+
 A semantic search platform powered by PostgreSQL + pgvector, Transformers.js, and a comprehensive NLP pipeline.
 
 ## Features
@@ -36,6 +38,7 @@ curl -X POST http://localhost:3001/api/generate-embeddings
 
 **Access:**
 - Frontend: http://localhost:3000
+- Help: http://localhost:3000/help
 - API: http://localhost:3001
 
 ## Runtime Verification (P1)
@@ -515,3 +518,37 @@ entity_relationships (entity_type, normalized_value, document_ids[], document_co
 -- Processing Status
 nlp_processing_status (document_id, tags_extracted, entities_extracted, metadata_extracted, relationships_updated)
 ```
+
+## How to Demo (Sprint Prototype)
+
+1. Start backend (`cd backend && npm run dev`) and frontend (`cd frontend && npm start`).
+2. Open `http://10.1.10.143:8090/search` for user flow.
+3. Run query `nostr` and verify each result shows:
+   - 200-char content snippet
+   - metadata (author/date/source/document type)
+   - relevance score + why matched
+   - clickable deep link (`View Original`) to Nostr/web/source URL
+4. Click a result to open preview modal and inspect full content + metadata.
+5. Set admin role once in browser console:
+   ```js
+   localStorage.setItem('beacon_role', 'admin')
+   ```
+6. Open `http://10.1.10.143:8090/admin` and verify:
+   - connector list from `/api/connectors`
+   - enable/disable toggle via `PATCH /api/connectors/:id`
+   - ingestion trigger via `POST /api/connectors/:id/run`
+   - live progress via `GET /api/connectors/:id/status`
+   - live logs via `GET /api/connectors/:id/logs` with level filters
+
+## Admin Quick Start
+
+- Admin access is path-protected by role check (`localStorage.beacon_role === 'admin'`).
+- Admin page is ingestion-focused (sources, status, logs). User page is search-only.
+- If ingestion fails, the UI surfaces the API error and allows retry.
+
+## Troubleshooting
+
+- **No admin access:** run `localStorage.setItem('beacon_role','admin')` and refresh.
+- **No results for `nostr`:** trigger Nostr connector run from `/admin` and wait for status completion.
+- **Network/API errors:** verify backend health at `/health`; use Retry buttons in UI.
+- **Docker build on this host fails:** local user lacks Docker daemon permission; run on deployment host with Docker access.

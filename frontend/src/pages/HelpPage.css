@@ -1,0 +1,10 @@
+.help-page { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 4rem; color: #e6ebff; }
+.help-header h1 { margin: 0 0 .5rem; }
+.help-header p { color: #a8b1d6; margin: 0 0 1rem; }
+.help-back-link { color: #7fb0ff; text-decoration: none; }
+.help-section { margin-top: 1.5rem; background: rgba(19,25,45,.65); border: 1px solid #2b355b; border-radius: 12px; padding: 1rem; }
+.help-section h2 { margin: 0 0 .5rem; }
+.help-section code { background: #1f2948; padding: .1rem .35rem; border-radius: 4px; }
+.help-example-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .5rem; }
+.help-example { display: block; background: #1a2342; border: 1px solid #2f3c69; border-radius: 8px; padding: .65rem .75rem; color: #d8e1ff; text-decoration: none; }
+.help-example:hover, .help-example:focus-visible { outline: 2px solid #7fb0ff; background: #222d52; }

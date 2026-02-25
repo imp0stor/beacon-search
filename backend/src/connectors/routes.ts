@@ -84,10 +84,10 @@ export function createConnectorRoutes(manager: ConnectorManager, webhookManager?
   });
 
   /**
-   * PUT /api/connectors/:id
+   * PUT/PATCH /api/connectors/:id
    * Update a connector
    */
-  router.put('/:id', async (req: Request, res: Response) => {
+  const updateConnectorHandler = async (req: Request, res: Response) => {
     try {
       const { name, description, config, isActive } = req.body;
 
@@ -115,7 +115,10 @@ export function createConnectorRoutes(manager: ConnectorManager, webhookManager?
       console.error('Error updating connector:', error);
       res.status(500).json({ error: 'Failed to update connector' });
     }
-  });
+  };
+
+  router.put('/:id', updateConnectorHandler);
+  router.patch('/:id', updateConnectorHandler);
 
   /**
    * DELETE /api/connectors/:id
@@ -212,6 +215,41 @@ export function createConnectorRoutes(manager: ConnectorManager, webhookManager?
     } catch (error) {
       console.error('Error getting status:', error);
       res.status(500).json({ error: 'Failed to get status' });
+    }
+  });
+
+  /**
+   * GET /api/connectors/:id/logs
+   * Get connector logs (live or last run)
+   */
+  router.get('/:id/logs', async (req: Request, res: Response) => {
+    try {
+      const connector = await manager.getConnector(req.params.id);
+      if (!connector) {
+        return res.status(404).json({ error: 'Connector not found' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 200;
+      const level = (req.query.level as string | undefined)?.toLowerCase();
+      const logs = await manager.getConnectorLogs(req.params.id, limit);
+
+      const mapped = logs.map((line, idx) => {
+        const lower = line.toLowerCase();
+        const guessedLevel = lower.includes('error') ? 'error' : lower.includes('warn') ? 'warn' : 'info';
+        const tsMatch = line.match(/^\[(.*?)\]/);
+        return {
+          id: `${req.params.id}-${idx}`,
+          timestamp: tsMatch?.[1] || null,
+          level: guessedLevel,
+          message: line
+        };
+      });
+
+      const filtered = level ? mapped.filter((entry) => entry.level === level) : mapped;
+      res.json(filtered);
+    } catch (error) {
+      console.error('Error getting connector logs:', error);
+      res.status(500).json({ error: 'Failed to get logs' });
     }
   });
 

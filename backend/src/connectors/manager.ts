@@ -274,6 +274,23 @@ export class ConnectorManager {
   }
 
   /**
+   * Get connector logs (current run + recent run history)
+   */
+  async getConnectorLogs(id: string, limit: number = 200): Promise<string[]> {
+    const current = this.getRunStatus(id);
+    if (current?.log?.length) {
+      return current.log.slice(-limit);
+    }
+
+    const history = await this.getRunHistory(id, 1);
+    if (!history.length || !history[0].log) {
+      return [];
+    }
+
+    return history[0].log.slice(-limit);
+  }
+
+  /**
    * Index a document
    */
   private async indexDocument(sourceId: string, doc: ExtractedDocument): Promise<void> {

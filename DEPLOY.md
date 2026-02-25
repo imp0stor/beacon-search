@@ -1,422 +1,164 @@
-# Beacon Search Deployment Guide
+# Deployment Checklist
 
-Production deployment guide for Beacon Search - a semantic search engine with RAG capabilities.
+**Project:** Beacon Search  
+**Environment:** [production/staging/development]
 
-## Prerequisites
+---
 
-- Docker & Docker Compose v2+
-- 4GB+ RAM (embedding model needs ~2GB)
-- PostgreSQL with pgvector extension (included in Docker setup)
-- OpenAI API key (for RAG query answering)
-- Domain name + SSL certificates (for production)
+## Pre-Deploy
 
-## Quick Start (Development)
+### Code Quality
+- [ ] Tests passing: `npm test` (or equivalent)
+- [ ] Build succeeds: `npm run build` (or equivalent)
+- [ ] Lint passing: `npm run lint` (if applicable)
+- [ ] No console errors/warnings
 
+### Schema & Database
+- [ ] Schema validated: `scripts/validate-schema.sh` (if applicable)
+- [ ] Migrations reviewed
+- [ ] Backup created: `scripts/backup.sh` (or manual)
+- [ ] Rollback plan documented
+
+### Git Status
+- [ ] All changes committed
+- [ ] Pushed to GitHub: `git push origin <branch>`
+- [ ] Branch: [branch-name]
+- [ ] Commit: [short-sha]
+
+### Configuration
+- [ ] Environment variables updated (if needed)
+- [ ] Secrets rotated (if needed)
+- [ ] Feature flags configured (if applicable)
+
+### Dependencies
+- [ ] npm packages up to date
+- [ ] Security vulnerabilities checked: `npm audit`
+- [ ] Docker images built (if applicable)
+
+---
+
+## Deploy
+
+### Deployment Steps
+
+**Option A: Docker Compose**
 ```bash
-# Clone and enter directory
-cd beacon-search
-
-# Copy environment template
-cp .env.example .env
-# Edit .env with your OPENAI_API_KEY
-
-# Start all services
-docker compose up -d
-
-# Check logs
-docker compose logs -f
-
-# Access:
-# - Frontend: http://localhost:3000
-# - Backend API: http://localhost:3001
-# - Health check: http://localhost:3001/health
+cd [PROJECT_PATH]
+git pull origin [BRANCH]
+docker compose build [SERVICE]
+docker compose up -d [SERVICE]
 ```
 
-## Production Deployment
-
-### 1. Server Setup
-
+**Option B: Direct**
 ```bash
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-
-# Install Docker Compose v2
-sudo apt install docker-compose-plugin
-
-# Create app directory
-sudo mkdir -p /opt/beacon-search
-cd /opt/beacon-search
+cd [PROJECT_PATH]
+git pull origin [BRANCH]
+npm install (if package.json changed)
+npm run build
+pm2 restart [APP] (or equivalent)
 ```
 
-### 2. Environment Configuration
-
+**Option C: Manual**
 ```bash
-# Copy project files
-git clone <your-repo> .
-
-# Create production environment file
-cp .env.example .env
+# Document your custom deployment steps here
 ```
 
-Edit `.env` with production values:
+### Verification During Deploy
+- [ ] Containers started: `docker compose ps` (if applicable)
+- [ ] No error logs during startup
+- [ ] Health endpoint responds: `curl http://localhost:[PORT]/health`
 
+---
+
+## Post-Deploy
+
+### Smoke Tests
+- [ ] Homepage loads
+- [ ] API endpoints respond
+- [ ] Database connectivity working
+- [ ] External integrations working (if applicable)
+
+### Critical User Flows
+- [ ] [Critical flow 1] - [e.g., User can log in]
+- [ ] [Critical flow 2] - [e.g., User can create content]
+- [ ] [Critical flow 3] - [e.g., Payment processing works]
+
+### Monitoring
+- [ ] Logs checked: `docker compose logs -f [SERVICE]` (or equivalent)
+- [ ] Error rate normal (if monitoring exists)
+- [ ] Response times normal (if monitoring exists)
+- [ ] No unexpected errors in logs (last 5 minutes)
+
+### Documentation
+- [ ] CHANGELOG.md updated
+- [ ] Deployment logged: [date, time, version, deployer]
+- [ ] Team notified (if applicable)
+
+---
+
+## Rollback Plan (If Deploy Fails)
+
+### Rollback Steps
 ```bash
-# Strong database password
-POSTGRES_PASSWORD=<generate-strong-password>
-DATABASE_URL=postgresql://beacon:<password>@db:5432/beacon_search
+# Option A: Revert to previous commit
+git revert [COMMIT_SHA]
+git push origin [BRANCH]
+[REDEPLOY_COMMAND]
 
-# Your OpenAI key
-OPENAI_API_KEY=sk-...
+# Option B: Checkout previous commit
+git checkout [PREVIOUS_COMMIT]
+[REDEPLOY_COMMAND]
 
-# Production API URL (your domain)
-REACT_APP_API_URL=https://api.yourdomain.com
+# Option C: Restore from backup
+[RESTORE_COMMANDS]
 ```
 
-### 3. Production Docker Compose
-
-Create `docker-compose.prod.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  db:
-    image: pgvector/pgvector:pg16
-    container_name: beacon-db
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-beacon}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-beacon_search}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U beacon -d beacon_search"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - beacon-net
-
-  backend:
-    build: ./backend
-    container_name: beacon-backend
-    restart: always
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      PORT: 3001
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      NODE_ENV: production
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - beacon-net
-
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3001}
-    container_name: beacon-frontend
-    restart: always
-    depends_on:
-      - backend
-    networks:
-      - beacon-net
-
-  nginx:
-    image: nginx:alpine
-    container_name: beacon-nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - beacon-net
-
-volumes:
-  pgdata:
-
-networks:
-  beacon-net:
-    driver: bridge
-```
-
-### 4. Nginx Configuration
-
-Create `nginx/conf.d/beacon.conf`:
-
-```nginx
-upstream backend {
-    server beacon-backend:3001;
-}
-
-upstream frontend {
-    server beacon-frontend:80;
-}
-
-server {
-    listen 80;
-    server_name yourdomain.com api.yourdomain.com;
-    
-    # Redirect to HTTPS
-    location / {
-        return 301 https://$host$request_uri;
-    }
-    
-    # Let's Encrypt verification
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    server_name yourdomain.com;
-    
-    ssl_certificate /etc/nginx/ssl/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
-    
-    # Frontend
-    location / {
-        proxy_pass http://frontend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    server_name api.yourdomain.com;
-    
-    ssl_certificate /etc/nginx/ssl/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
-    
-    # Backend API
-    location / {
-        proxy_pass http://backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # WebSocket support (if needed)
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-### 5. SSL Setup with Let's Encrypt
-
+### Database Rollback
 ```bash
-# Install certbot
-sudo apt install certbot
+# If migrations applied, rollback:
+[MIGRATION_ROLLBACK_COMMAND]
 
-# Get certificates (stop nginx first)
-docker compose -f docker-compose.prod.yml stop nginx
-
-sudo certbot certonly --standalone \
-    -d yourdomain.com \
-    -d api.yourdomain.com
-
-# Copy certificates
-sudo mkdir -p nginx/ssl
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem nginx/ssl/
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem nginx/ssl/
-sudo chmod 644 nginx/ssl/*.pem
-
-# Restart nginx
-docker compose -f docker-compose.prod.yml up -d nginx
+# If data changed, restore backup:
+[RESTORE_BACKUP_COMMAND]
 ```
 
-Auto-renewal cron:
-```bash
-# Add to crontab
-0 3 * * * certbot renew --quiet && cp /etc/letsencrypt/live/yourdomain.com/*.pem /opt/beacon-search/nginx/ssl/ && docker restart beacon-nginx
-```
+### Verification After Rollback
+- [ ] Service running
+- [ ] Health check passing
+- [ ] Critical flows working
 
-### 6. Database Migrations
+---
 
-For existing databases, run migrations:
+## Deployment Log
 
-```bash
-# Connect to running database
-docker exec -it beacon-db psql -U beacon -d beacon_search
+**Date:** [YYYY-MM-DD HH:MM TZ]  
+**Deployer:** [Name/Agent]  
+**Version/Commit:** [sha/tag]  
+**Environment:** [production/staging/dev]  
+**Status:** [✅ success / ❌ rolled back / ⚠️ partial]
 
-# Run migration manually
-\i /path/to/migrations/002_webhooks_and_source_portal.sql
-```
+**Changes Deployed:**
+- [Feature 1]
+- [Bug fix 2]
+- [Dependency update 3]
 
-Or mount migrations in docker-compose:
-```yaml
-volumes:
-  - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
-```
+**Issues Encountered:**
+- [Issue 1] - [Resolution]
+- [None]
 
-### 7. Start Production
+**Performance Impact:**
+- Downtime: [X seconds/minutes]
+- Errors: [count]
+- Rollback required: [yes/no]
 
-```bash
-# Build and start
-docker compose -f docker-compose.prod.yml up -d --build
+**Notes:**
+[Any additional context about this deployment]
 
-# Check status
-docker compose -f docker-compose.prod.yml ps
+---
 
-# Check health
-curl https://api.yourdomain.com/health
-```
+## Contacts
 
-## Monitoring
-
-### Health Checks
-
-The `/health` endpoint returns:
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "checks": {
-    "database": { "status": "ok", "latency": 5 },
-    "embedding": { "status": "ok" }
-  }
-}
-```
-
-Status codes:
-- `200` - All systems operational
-- `503` - One or more systems degraded
-
-### Logging
-
-```bash
-# All logs
-docker compose logs -f
-
-# Specific service
-docker compose logs -f backend
-
-# Last 100 lines
-docker compose logs --tail=100 backend
-```
-
-### Prometheus Metrics (Optional)
-
-Add to backend for metrics:
-```typescript
-// TODO: Add prometheus metrics endpoint
-app.get('/metrics', (req, res) => {
-  // Export metrics
-});
-```
-
-## Backup & Recovery
-
-### Database Backup
-
-```bash
-# Backup
-docker exec beacon-db pg_dump -U beacon beacon_search > backup_$(date +%Y%m%d).sql
-
-# Restore
-cat backup.sql | docker exec -i beacon-db psql -U beacon -d beacon_search
-```
-
-### Automated Backups
-
-```bash
-# Crontab entry for daily backups
-0 2 * * * docker exec beacon-db pg_dump -U beacon beacon_search | gzip > /backups/beacon_$(date +\%Y\%m\%d).sql.gz
-```
-
-## Scaling
-
-### Horizontal Scaling
-
-For high load, scale the backend:
-
-```yaml
-services:
-  backend:
-    deploy:
-      replicas: 3
-```
-
-Add load balancer upstream in nginx:
-```nginx
-upstream backend {
-    least_conn;
-    server beacon-backend-1:3001;
-    server beacon-backend-2:3001;
-    server beacon-backend-3:3001;
-}
-```
-
-### Database Scaling
-
-For large document collections (>1M documents):
-- Increase `lists` parameter in IVFFlat index
-- Consider pgvector HNSW index for better performance
-- Add read replicas for search queries
-
-## Troubleshooting
-
-### Embedding Model Not Loading
-
-```bash
-# Check memory
-docker stats beacon-backend
-
-# Increase memory limit
-deploy:
-  resources:
-    limits:
-      memory: 4G
-```
-
-### Database Connection Issues
-
-```bash
-# Check database is healthy
-docker exec beacon-db pg_isready -U beacon
-
-# Check logs
-docker logs beacon-db
-```
-
-### Frontend Can't Reach API
-
-- Verify `REACT_APP_API_URL` is set correctly at build time
-- Check CORS settings in backend
-- Verify nginx proxy configuration
-
-## Environment Variables Reference
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | - | PostgreSQL connection string |
-| `PORT` | No | 3001 | Backend API port |
-| `OPENAI_API_KEY` | No* | - | OpenAI API key for RAG |
-| `OPENAI_MODEL` | No | gpt-4o-mini | OpenAI model |
-| `ENABLE_OCR` | No | true | Enable OCR processing |
-| `ENABLE_TRANSLATION` | No | false | Enable translation |
-| `ENABLE_AI_DESCRIPTION` | No | false | Enable AI descriptions |
-| `REACT_APP_API_URL` | Yes | - | API URL for frontend |
-
-*Required for `/api/ask` endpoint (RAG queries)
+**On-Call:** [Contact info]  
+**Escalation:** [Contact info]  
+**Documentation:** [Link to docs]  
+**Monitoring:** [Link to dashboard]

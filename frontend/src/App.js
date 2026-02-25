@@ -8,6 +8,7 @@ import RichContentView from './components/RichContentView';
 import TagCloud from './components/TagCloud.jsx';
 import TagFilterSidebar from './components/TagFilterSidebar.jsx';
 import InfiniteScrollResults from './components/InfiniteScrollResults.jsx';
+import HelpPage from './pages/HelpPage';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -68,9 +69,15 @@ const CONNECTOR_STATUS = [
 import { AdminApp } from './admin';
 
 function App() {
-  const isAdminPath = window.location.pathname.startsWith('/admin');
+  const currentPath = window.location.pathname;
+  const isAdminPath = currentPath.startsWith('/admin');
+  const isHelpPath = currentPath.startsWith('/help');
   if (isAdminPath) {
     return <AdminApp />;
+  }
+
+  if (isHelpPath) {
+    return <HelpPage />;
   }
 
   const { enabled: sharedUiEnabled } = useSharedUI();
@@ -129,6 +136,11 @@ function App() {
     const savedPubkey = localStorage.getItem('nostr_pubkey');
     if (savedPubkey) {
       setNostrPubkey(savedPubkey);
+    }
+
+    const urlQuery = new URLSearchParams(window.location.search).get('q');
+    if (urlQuery) {
+      setQuery(urlQuery);
     }
   }, []);
 
@@ -845,6 +857,13 @@ function App() {
             NLP Online
           </div>
           <button
+            className="ghost-button ui-button"
+            onClick={() => { window.location.href = '/help'; }}
+            aria-label="Open help page"
+          >
+            Help
+          </button>
+          <button
             className="primary-button ui-cta"
             onClick={() => setShowAddForm(!showAddForm)}
             aria-label="Add new document"
@@ -1057,6 +1076,30 @@ function App() {
                     ? `Filtered to ${filteredCount} of ${totalResults} results in ${searchTime}ms`
                     : `Found ${totalResults} results in ${searchTime}ms`
                   }
+                </div>
+              )}
+
+              {!hasSearched && !loading && (
+                <div className="panel" style={{ marginBottom: '1rem' }}>
+                  <h3>New to Beacon?</h3>
+                  <p className="panel-subtitle">Search indexed Nostr events and connected sources with hybrid semantic + keyword ranking.</p>
+                  <div className="meta-chip-grid" style={{ marginBottom: '.75rem' }}>
+                    {['nostr wallet security', 'kind:30023 client onboarding', 'relay outage postmortem', 'wot trusted devs'].map((sample) => (
+                      <button
+                        key={sample}
+                        type="button"
+                        className="meta-chip"
+                        onClick={() => {
+                          setQuery(sample);
+                        }}
+                      >
+                        {sample}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="panel-subtitle" style={{ marginBottom: 0 }}>
+                    To ingest first data, open <strong>Source Connectors</strong> → <strong>Add Connector</strong> and run an initial sync.
+                  </p>
                 </div>
               )}
 
