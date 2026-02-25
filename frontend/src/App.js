@@ -118,6 +118,8 @@ function App() {
   const [selectedDocType, setSelectedDocType] = useState(null);
   const [selectedAuthor, setSelectedAuthor] = useState(null);
   const [tagFilterMode, setTagFilterMode] = useState('and');
+  const [wotMode, setWotMode] = useState('off');
+  const [wotThreshold, setWotThreshold] = useState(0.35);
 
   const [metadataStats, setMetadataStats] = useState({ sources: [], types: [], authors: [] });
   const [ontologyTree, setOntologyTree] = useState([]);
@@ -377,14 +379,23 @@ function App() {
       if (query) params.append('q', query);
       params.append('limit', '20');
 
-      const filterActive = selectedTags.length > 0 || selectedEntity || selectedSentiment || selectedSource || selectedDocType || selectedAuthor || selectedConcept;
+      const filterActive = selectedTags.length > 0 || selectedEntity || selectedSentiment || selectedSource || selectedDocType || selectedAuthor || selectedConcept || wotMode !== 'off';
 
       if (filterActive) {
-        // Try server-side filtered search when available, otherwise fallback to client-side filtering.
+        params.append('mode', searchMode);
+        params.append('tagLogic', tagFilterMode);
+        if (selectedTags.length > 0) params.append('tags', selectedTags.join(','));
+        if (selectedEntity) {
+          params.append('entityType', selectedEntity.type);
+          params.append('entityValue', selectedEntity.value);
+        }
+        if (selectedSentiment) params.append('sentiment', selectedSentiment);
+        if (selectedSource) params.append('source', selectedSource);
+        if (selectedDocType) params.append('type', selectedDocType);
+        if (selectedAuthor) params.append('author', selectedAuthor);
+        params.append('wotMode', wotMode);
+        params.append('wotThreshold', String(wotThreshold));
         url = `${API_URL}/api/search/filtered?${params.toString()}`;
-        if (selectedTags.length > 0) url += `&tags=${selectedTags.join(',')}`;
-        if (selectedEntity) url += `&entityType=${selectedEntity.type}&entityValue=${selectedEntity.value}`;
-        if (selectedSentiment) url += `&sentiment=${selectedSentiment}`;
       } else if (query) {
         params.append('mode', searchMode);
         url = `${API_URL}/api/search?${params.toString()}`;
@@ -392,16 +403,7 @@ function App() {
         url = `${API_URL}/api/documents?limit=20`;
       }
 
-      let response = await fetch(url);
-      if (!response.ok && filterActive) {
-        // TODO: /api/search/filtered not available yet; fall back to basic search.
-        if (query) {
-          params.append('mode', searchMode);
-          response = await fetch(`${API_URL}/api/search?${params.toString()}`);
-        } else {
-          response = await fetch(`${API_URL}/api/documents?limit=20`);
-        }
-      }
+      const response = await fetch(url);
 
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
@@ -415,7 +417,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [query, searchMode, selectedTags, selectedEntity, selectedSentiment, selectedSource, selectedDocType, selectedAuthor, selectedConcept]);
+  }, [query, searchMode, selectedTags, tagFilterMode, selectedEntity, selectedSentiment, selectedSource, selectedDocType, selectedAuthor, selectedConcept, wotMode, wotThreshold]);
 
   const baseResults = useMemo(() => (
     hasSearched ? results : documentSample
@@ -616,6 +618,9 @@ function App() {
     setSelectedSource(null);
     setSelectedDocType(null);
     setSelectedAuthor(null);
+    setTagFilterMode('and');
+    setWotMode('off');
+    setWotThreshold(0.35);
     setConceptPath([]);
   };
 
@@ -686,7 +691,7 @@ function App() {
     return children;
   }, [ontologyTree, conceptPath]);
 
-  const hasActiveFilters = selectedTags.length > 0 || selectedEntity || selectedSentiment || selectedSource || selectedDocType || selectedAuthor || conceptPath.length > 0;
+  const hasActiveFilters = selectedTags.length > 0 || selectedEntity || selectedSentiment || selectedSource || selectedDocType || selectedAuthor || conceptPath.length > 0 || wotMode !== 'off';
 
   const groupedEntities = docDetail.entities.reduce((acc, entity) => {
     if (!acc[entity.type]) acc[entity.type] = [];
@@ -1087,6 +1092,12 @@ function App() {
               <div className="search-layout" style={{ display: 'flex', gap: '0' }}>
                 <TagFilterSidebar
                   selectedTags={selectedTags}
+                  tagFilterMode={tagFilterMode}
+                  onTagFilterModeChange={setTagFilterMode}
+                  wotMode={wotMode}
+                  onWotModeChange={setWotMode}
+                  wotThreshold={wotThreshold}
+                  onWotThresholdChange={setWotThreshold}
                   onTagToggle={toggleTag}
                   onClearFilters={clearFilters}
                   minQuality={minQuality}

@@ -19,6 +19,30 @@ export function createUxRoutes(
 ): Router {
   const router = Router();
 
+  const parseCsv = (value?: string): string[] => (
+    (value || '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+  );
+
+  const resolveWotThreshold = (mode: string, explicitThreshold?: number): number => {
+    const defaults: Record<string, number> = {
+      off: 0,
+      open: 0,
+      moderate: 0.35,
+      strict: 0.65,
+    };
+
+    const base = defaults[mode] ?? defaults.off;
+    if (Number.isFinite(explicitThreshold as number)) {
+      const value = Math.max(0, Math.min(1, explicitThreshold as number));
+      return Math.max(base, value);
+    }
+
+    return base;
+  };
+
   // ============================================
   // TAG ENDPOINTS
   // ============================================
@@ -277,6 +301,219 @@ export function createUxRoutes(
     }
   });
 
+  /**
+   * GET /api/search/filtered
+   * Filter-aware search endpoint (ranking-compatible with vector/text/hybrid modes)
+   */
+  router.get('/search/filtered', async (req: Request, res: Response) => {
+    try {
+      const query = (req.query.q as string) || '';
+      const mode = ((req.query.mode as string) || 'hybrid').toLowerCase();
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+
+      const tags = parseCsv(req.query.tags as string | undefined);
+      const tagLogic = ((req.query.tagLogic as string) || 'and').toLowerCase();
+      const entityType = (req.query.entityType as string) || undefined;
+      const entityValue = (req.query.entityValue as string) || undefined;
+      const sentiment = (req.query.sentiment as string) || undefined;
+      const source = (req.query.source as string) || undefined;
+      const type = (req.query.type as string) || undefined;
+      const author = (req.query.author as string) || undefined;
+
+      const wotMode = ((req.query.wotMode as string) || 'off').toLowerCase();
+      const wotThreshold = req.query.wotThreshold !== undefined
+        ? parseFloat(req.query.wotThreshold as string)
+        : undefined;
+      const minWotScore = resolveWotThreshold(wotMode, wotThreshold);
+
+      const conditions: string[] = [];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (source) {
+        conditions.push(`d.source_id = $${paramIndex}`);
+        params.push(source);
+        paramIndex += 1;
+      }
+
+      if (type) {
+        conditions.push(`COALESCE(d.document_type, d.type, d.category) = $${paramIndex}`);
+        params.push(type);
+        paramIndex += 1;
+      }
+
+      if (author) {
+        conditions.push(`COALESCE(d.author, d.attributes->>'author') = $${paramIndex}`);
+        params.push(author);
+        paramIndex += 1;
+      }
+
+      if (sentiment) {
+        conditions.push(`EXISTS (
+          SELECT 1 FROM document_metadata dm
+          WHERE dm.document_id = d.id
+            AND dm.meta_key = 'sentiment'
+            AND LOWER(dm.meta_value) = LOWER($${paramIndex})
+        )`);
+        params.push(sentiment);
+        paramIndex += 1;
+      }
+
+      if (entityType && entityValue) {
+        conditions.push(`EXISTS (
+          SELECT 1 FROM document_entities de
+          WHERE de.document_id = d.id
+            AND de.entity_type = $${paramIndex}
+            AND COALESCE(de.normalized_value, de.entity_value) = $${paramIndex + 1}
+        )`);
+        params.push(entityType, entityValue);
+        paramIndex += 2;
+      }
+
+      if (tags.length > 0) {
+        if (tagLogic === 'or') {
+          conditions.push(`EXISTS (
+            SELECT 1 FROM document_tags dt
+            WHERE dt.document_id = d.id
+              AND dt.tag = ANY($${paramIndex})
+          )`);
+          params.push(tags);
+          paramIndex += 1;
+        } else {
+          conditions.push(`d.id IN (
+            SELECT document_id
+            FROM document_tags
+            WHERE tag = ANY($${paramIndex})
+            GROUP BY document_id
+            HAVING COUNT(DISTINCT tag) = $${paramIndex + 1}
+          )`);
+          params.push(tags, tags.length);
+          paramIndex += 2;
+        }
+      }
+
+      if (wotMode !== 'off') {
+        conditions.push(`COALESCE(
+          NULLIF(d.attributes->>'wot_score', '')::float,
+          (
+            SELECT NULLIF(dm.meta_value, '')::float
+            FROM document_metadata dm
+            WHERE dm.document_id = d.id
+              AND dm.meta_key IN ('wot_score', 'author_wot_score')
+            ORDER BY dm.created_at DESC NULLS LAST
+            LIMIT 1
+          ),
+          0
+        ) >= $${paramIndex}`);
+        params.push(minWotScore);
+        paramIndex += 1;
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      let results;
+      if (mode === 'vector' && query && generateEmbedding) {
+        const embedding = await generateEmbedding(query);
+        const vectorStr = `[${embedding.join(',')}]`;
+        const sql = `
+          SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type,
+                 d.external_id, d.attributes, d.created_at, d.last_modified,
+                 1 - (d.embedding <=> $${paramIndex}::vector) as score
+          FROM documents d
+          ${whereClause ? `${whereClause} AND d.embedding IS NOT NULL` : 'WHERE d.embedding IS NOT NULL'}
+          ORDER BY score DESC
+          LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
+        `;
+        params.push(vectorStr, limit, offset);
+        results = await pool.query(sql, params);
+      } else if (mode === 'text' && query) {
+        const tsQuery = query.split(/\s+/).join(' | ');
+        const sql = `
+          SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type,
+                 d.external_id, d.attributes, d.created_at, d.last_modified,
+                 ts_rank(to_tsvector('english', COALESCE(d.content,'') || ' ' || COALESCE(d.title,'')),
+                        to_tsquery('english', $${paramIndex})) as score
+          FROM documents d
+          ${whereClause ? `${whereClause} AND to_tsvector('english', COALESCE(d.content,'') || ' ' || COALESCE(d.title,'')) @@ to_tsquery('english', $${paramIndex})` : `WHERE to_tsvector('english', COALESCE(d.content,'') || ' ' || COALESCE(d.title,'')) @@ to_tsquery('english', $${paramIndex})`}
+          ORDER BY score DESC
+          LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
+        `;
+        params.push(tsQuery, limit, offset);
+        results = await pool.query(sql, params);
+      } else if (query && generateEmbedding) {
+        const embedding = await generateEmbedding(query);
+        const vectorStr = `[${embedding.join(',')}]`;
+        const safeTextQuery = query.split(/\s+/).join(' | ');
+        const sql = `
+          WITH vector_scores AS (
+            SELECT d.id, 1 - (d.embedding <=> $${paramIndex}::vector) as vscore
+            FROM documents d
+            ${whereClause ? `${whereClause} AND d.embedding IS NOT NULL` : 'WHERE d.embedding IS NOT NULL'}
+          ),
+          text_scores AS (
+            SELECT d.id,
+                   ts_rank(to_tsvector('english', COALESCE(d.content,'') || ' ' || COALESCE(d.title,'')),
+                           to_tsquery('english', $${paramIndex + 1})) as tscore
+            FROM documents d
+            ${whereClause}
+          )
+          SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type,
+                 d.external_id, d.attributes, d.created_at, d.last_modified,
+                 COALESCE(v.vscore, 0) * 0.7 + COALESCE(t.tscore, 0) * 0.3 as score
+          FROM documents d
+          LEFT JOIN vector_scores v ON d.id = v.id
+          LEFT JOIN text_scores t ON d.id = t.id
+          ${whereClause}
+          ORDER BY score DESC
+          LIMIT $${paramIndex + 2} OFFSET $${paramIndex + 3}
+        `;
+        params.push(vectorStr, safeTextQuery, limit, offset);
+        results = await pool.query(sql, params);
+      } else {
+        const sql = `
+          SELECT d.id, d.title, d.content, d.url, d.source_id, d.document_type,
+                 d.external_id, d.attributes, d.created_at, d.last_modified,
+                 1.0 as score
+          FROM documents d
+          ${whereClause}
+          ORDER BY d.created_at DESC
+          LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `;
+        params.push(limit, offset);
+        results = await pool.query(sql, params);
+      }
+
+      const countQuery = `SELECT COUNT(*)::int AS total FROM documents d ${whereClause}`;
+      const countResult = await pool.query(countQuery, params.slice(0, paramIndex - 1));
+      const total = countResult.rows[0]?.total || 0;
+
+      res.json({
+        query,
+        mode,
+        filters: {
+          tags,
+          tagLogic,
+          entity: entityType && entityValue ? { type: entityType, value: entityValue } : null,
+          sentiment,
+          source,
+          type,
+          author,
+          wotMode,
+          wotThreshold: minWotScore,
+        },
+        results: results.rows,
+        total,
+        limit,
+        offset,
+        hasMore: offset + results.rows.length < total,
+      });
+    } catch (error) {
+      console.error('Error in filtered search:', error);
+      res.status(500).json({ error: 'Filtered search failed' });
+    }
+  });
+
   // ============================================
   // TAG CO-OCCURRENCE / DRILL-DOWN ENDPOINTS
   // ============================================
@@ -320,13 +557,17 @@ export function createUxRoutes(
 
       // Find documents that contain ALL selected tags
       const docsQuery = `
-        SELECT ARRAY_AGG(DISTINCT document_id) as doc_ids, COUNT(DISTINCT document_id) as doc_count
-        FROM document_tags
-        WHERE tag = ANY($1)
-        GROUP BY 'all_selected'
+        SELECT ARRAY_AGG(document_id) as doc_ids, COUNT(*) as doc_count
+        FROM (
+          SELECT document_id
+          FROM document_tags
+          WHERE tag = ANY($1)
+          GROUP BY document_id
+          HAVING COUNT(DISTINCT tag) = $2
+        ) all_selected_docs
       `;
 
-      const docsResult = await pool.query(docsQuery, [selectedTags]);
+      const docsResult = await pool.query(docsQuery, [selectedTags, selectedTags.length]);
 
       if (docsResult.rows.length === 0 || !docsResult.rows[0].doc_ids) {
         return res.json({

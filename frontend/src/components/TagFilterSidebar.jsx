@@ -9,7 +9,13 @@ import './TagFilterSidebar.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function TagFilterSidebar({ 
-  selectedTags, 
+  selectedTags,
+  tagFilterMode,
+  onTagFilterModeChange,
+  wotMode,
+  onWotModeChange,
+  wotThreshold,
+  onWotThresholdChange,
   onTagToggle, 
   onClearFilters,
   minQuality,
@@ -22,7 +28,6 @@ function TagFilterSidebar({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [tagLogic, setTagLogic] = useState('AND'); // 'AND' or 'OR'
 
   useEffect(() => {
     loadTags();
@@ -65,7 +70,7 @@ function TagFilterSidebar({
     onTagToggle(tagName);
   };
 
-  const hasActiveFilters = selectedTags.length > 0 || minQuality > 0.3 || showMediaOnly;
+  const hasActiveFilters = selectedTags.length > 0 || minQuality > 0.3 || showMediaOnly || (wotMode && wotMode !== 'off');
 
   return (
     <aside className="tag-filter-sidebar">
@@ -132,6 +137,39 @@ function TagFilterSidebar({
         </label>
       </div>
 
+      {/* WoT Filter */}
+      <div className="filter-section wot-filter">
+        <h3>
+          <span className="icon">🤝</span> Web of Trust
+        </h3>
+        <select
+          aria-label="WoT mode"
+          value={wotMode || 'off'}
+          onChange={(e) => onWotModeChange(e.target.value)}
+          className="tag-search-input"
+        >
+          <option value="off">Off</option>
+          <option value="open">Open</option>
+          <option value="moderate">Moderate</option>
+          <option value="strict">Strict</option>
+        </select>
+        {wotMode !== 'off' && (
+          <div className="quality-slider-container" style={{ marginTop: '0.5rem' }}>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={wotThreshold}
+              onChange={(e) => onWotThresholdChange(parseFloat(e.target.value))}
+              className="quality-slider"
+              aria-label="WoT threshold"
+            />
+            <div className="quality-value">Min WoT: {Number(wotThreshold).toFixed(2)}</div>
+          </div>
+        )}
+      </div>
+
       {/* Tag Logic Toggle */}
       {selectedTags.length > 1 && (
         <div className="filter-section tag-logic">
@@ -139,8 +177,8 @@ function TagFilterSidebar({
             <input
               type="radio"
               value="AND"
-              checked={tagLogic === 'AND'}
-              onChange={() => setTagLogic('AND')}
+              checked={(tagFilterMode || 'and') === 'and'}
+              onChange={() => onTagFilterModeChange('and')}
             />
             Match ALL tags
           </label>
@@ -148,8 +186,8 @@ function TagFilterSidebar({
             <input
               type="radio"
               value="OR"
-              checked={tagLogic === 'OR'}
-              onChange={() => setTagLogic('OR')}
+              checked={(tagFilterMode || 'and') === 'or'}
+              onChange={() => onTagFilterModeChange('or')}
             />
             Match ANY tag
           </label>
