@@ -34,14 +34,14 @@ export class DashboardController {
     const [docCount, crawlerCounts, syncSummary, unackAlerts, docsByType] = await Promise.all([
       this.pool.query("SELECT COUNT(*)::int AS total FROM documents"),
       this.pool.query(
-        "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE status = active)::int AS active, COUNT(*) FILTER (WHERE status = inactive)::int AS inactive, COUNT(*) FILTER (WHERE status = error)::int AS error FROM crawlers"
+        "SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE status = 'active')::int AS active, COUNT(*) FILTER (WHERE status = 'inactive')::int AS inactive, COUNT(*) FILTER (WHERE status = 'error')::int AS error FROM crawlers"
       ),
       this.pool.query(
-        "SELECT COUNT(*)::int AS total_runs, COUNT(*) FILTER (WHERE status = running)::int AS running, COUNT(*) FILTER (WHERE status = success)::int AS success, COUNT(*) FILTER (WHERE status = failed)::int AS failed, MAX(started_at) AS last_sync_at FROM sync_history"
+        "SELECT COUNT(*)::int AS total_runs, COUNT(*) FILTER (WHERE status = 'running')::int AS running, COUNT(*) FILTER (WHERE status = 'success')::int AS success, COUNT(*) FILTER (WHERE status = 'failed')::int AS failed, MAX(started_at) AS last_sync_at FROM sync_history"
       ),
       this.pool.query("SELECT COUNT(*)::int AS total FROM system_alerts WHERE acknowledged = false"),
       this.pool.query(
-        "SELECT COALESCE(type, unknown) AS type, COUNT(*)::int AS count FROM documents GROUP BY COALESCE(type, unknown) ORDER BY COUNT(*) DESC LIMIT 20"
+        "SELECT COALESCE(type, 'unknown') AS type, COUNT(*)::int AS count FROM documents GROUP BY COALESCE(type, 'unknown') ORDER BY COUNT(*) DESC LIMIT 20"
       )
     ]);
 

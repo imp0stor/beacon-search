@@ -42,12 +42,12 @@ export async function fetchDashboardData() {
     id: (row && row.id) || ((row && row.crawler_id) ? row.crawler_id : 'sync') + '-' + ((row && row.started_at) || Date.now()),
     crawlerName: (row && (row.crawler_name || row.crawlerName || row.crawler_id)) || 'Crawler',
     status: (row && row.status) || 'unknown',
-    fetched: row && (row.fetched ?? (row.metadata && row.metadata.fetched)),
-    indexed: row && (row.indexed ?? (row.metadata && row.metadata.indexed)),
+    fetched: row && (row.fetched ?? row.documents_fetched ?? (row.metadata && row.metadata.fetched)),
+    indexed: row && (row.indexed ?? row.documents_added ?? (row.metadata && row.metadata.indexed)),
     skipped: row && (row.skipped ?? (row.metadata && row.metadata.skipped)),
     startedAt: row && (row.started_at || row.startedAt),
-    finishedAt: row && (row.finished_at || row.finishedAt),
-    error: (row && (row.error || (row.metadata && row.metadata.error))) || null
+    finishedAt: row && (row.completed_at || row.finished_at || row.finishedAt),
+    error: (row && (row.error || row.error_message || (row.metadata && row.metadata.error))) || null
   }));
 
   const docs = Number((indexStatus && indexStatus.documents) || 0);
