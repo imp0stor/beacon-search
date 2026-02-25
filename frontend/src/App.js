@@ -9,13 +9,13 @@ import RichContentView from './components/RichContentView';
 import TagCloud from './components/TagCloud.jsx';
 import TagFilterSidebar from './components/TagFilterSidebar.jsx';
 import InfiniteScrollResults from './components/InfiniteScrollResults.jsx';
-import AdminLayout from './admin/AdminLayout';
-import AdminRoute from './admin/components/AdminRoute';
-import Dashboard from './admin/pages/Dashboard';
-import ServersPage from './admin/pages/ServersPage';
-import DocumentTypesPage from './admin/pages/DocumentTypesPage';
-import CrawlersPage from './admin/pages/CrawlersPage';
-import SettingsPage from './admin/pages/SettingsPage';
+import AdminLayout from './admin/AdminLayout.tsx';
+import AdminRoute from './admin/components/AdminRoute.tsx';
+import Dashboard from './admin/pages/Dashboard.tsx';
+import ServersPage from './admin/pages/ServersPage.tsx';
+import DocumentTypesPage from './admin/pages/DocumentTypesPage.tsx';
+import CrawlersPage from './admin/pages/CrawlersPage.tsx';
+import SettingsPage from './admin/pages/SettingsPage.tsx';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
