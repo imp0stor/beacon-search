@@ -816,3 +816,110 @@
     text-align: center;
   }
 }
+
+/* Rich Content Rendering */
+.rich-content {
+  color: #cbd5e1;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Embedded Images */
+.embedded-image {
+  margin: 1rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.embedded-image img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+/* Embedded Links */
+.embedded-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #60a5fa;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  margin: 0 0.25rem;
+}
+
+.embedded-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+/* Nostr Mentions */
+.nostr-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #a78bfa;
+  text-decoration: none;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  margin: 0 0.25rem;
+}
+
+.nostr-mention:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Expanded State */
+.user-result.expanded {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+}
+
+/* Content Spacing in Rich Rendering */
+.rich-content > span {
+  display: inline;
+}
+
+.rich-content .embedded-image:first-child {
+  margin-top: 0;
+}
+
+.rich-content .embedded-image:last-child {
+  margin-bottom: 0;
+}
+
+/* Loading State for Images */
+.embedded-image img {
+  background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.embedded-image img[src] {
+  animation: none;
+  background: transparent;
+}

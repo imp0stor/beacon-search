@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ContentRenderer from './ContentRenderer';
 import './user.css';
 
 const API_URL = '';
@@ -132,15 +133,19 @@ function UserApp() {
             const link = getDeepLink(r);
             
             return (
-              <article key={r.external_id || r.id} className="user-result">
+              <article key={r.external_id || r.id} className={`user-result ${isExpanded ? 'expanded' : ''}`}>
                 <div onClick={() => toggleExpand(r)} style={{ cursor: 'pointer' }}>
                   <div className="result-header">
                     <h3>{r.title || 'Untitled'}</h3>
                     <span className="score">{((r.score || 0) * 100).toFixed(0)}%</span>
                   </div>
-                  <p className="result-snippet">
-                    {isExpanded ? r.content : (r.content || '').slice(0, 200) + (r.content?.length > 200 ? '...' : '')}
-                  </p>
+                  {!isExpanded ? (
+                    <p className="result-snippet">
+                      {(r.content || '').slice(0, 200)}{r.content?.length > 200 ? '...' : ''}
+                    </p>
+                  ) : (
+                    <ContentRenderer content={r.content} />
+                  )}
                   <div className="result-meta">
                     <span>Source: {r.source_name || 'unknown'}</span>
                     {r.author && <span>Author: {r.author.slice(0, 16)}...</span>}
