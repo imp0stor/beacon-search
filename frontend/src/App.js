@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import Bookshelf from './Bookshelf';
 import ConfigWizard from './ConfigWizard';
@@ -8,6 +9,13 @@ import RichContentView from './components/RichContentView';
 import TagCloud from './components/TagCloud.jsx';
 import TagFilterSidebar from './components/TagFilterSidebar.jsx';
 import InfiniteScrollResults from './components/InfiniteScrollResults.jsx';
+import AdminLayout from './admin/AdminLayout';
+import AdminRoute from './admin/components/AdminRoute';
+import Dashboard from './admin/pages/Dashboard';
+import ServersPage from './admin/pages/ServersPage';
+import DocumentTypesPage from './admin/pages/DocumentTypesPage';
+import CrawlersPage from './admin/pages/CrawlersPage';
+import SettingsPage from './admin/pages/SettingsPage';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -65,12 +73,28 @@ const CONNECTOR_STATUS = [
   { name: 'Ticketing Export', detail: 'Zendesk', status: 'Pending' }
 ];
 
-import { AdminApp } from './admin';
-
 function App() {
   const isAdminPath = window.location.pathname.startsWith('/admin');
   if (isAdminPath) {
-    return <AdminApp />;
+    return (
+      <Routes>
+        <Route
+          path="/admin"
+          element={(
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          )}
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="servers" element={<ServersPage />} />
+          <Route path="document-types" element={<DocumentTypesPage />} />
+          <Route path="crawlers" element={<CrawlersPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
+    );
   }
 
   const { enabled: sharedUiEnabled } = useSharedUI();
