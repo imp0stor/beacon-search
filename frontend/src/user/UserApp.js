@@ -8,7 +8,8 @@ function UserApp() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [searchType, setSearchType] = useState('content'); // 'content' or 'user'
+  const [searchType, setSearchType] = useState('content');
+  const [expanded, setExpanded] = useState(null);
 
   const runSearch = async (e) => {
     e?.preventDefault();
@@ -25,18 +26,15 @@ function UserApp() {
       let res, data;
       
       if (searchType === 'user') {
-        // User search by NIP-05 or npub
         res = await fetch(`${API_URL}/api/search/users?q=${encodeURIComponent(q)}&limit=20`);
         if (!res.ok) throw new Error(`User search failed (${res.status})`);
         data = await res.json();
         setResults(data.results || []);
       } else {
-        // Content search
         res = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(q)}&limit=20`);
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         data = await res.json();
         
-        // Deduplicate by external_id (Nostr event ID)
         const seen = new Set();
         const unique = (data.results || []).filter(r => {
           const key = r.external_id || r.id;
@@ -51,6 +49,29 @@ function UserApp() {
       setResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDeepLink = (r) => {
+    const sourceType = (r.source_type || r.document_type || '').toLowerCase();
+    const eventId = r.external_id;
+    
+    if (sourceType.includes('nostr') || (eventId && eventId.length === 64)) {
+      return { type: 'nostr', url: `https://primal.net/e/${eventId}` };
+    }
+    
+    if (r.url) {
+      return { type: 'web', url: r.url };
+    }
+    
+    return null;
+  };
+
+  const toggleExpand = (r) => {
+    if (expanded?.id === r.id) {
+      setExpanded(null);
+    } else {
+      setExpanded(r);
     }
   };
 
@@ -106,23 +127,53 @@ function UserApp() {
 
       {!loading && results.length > 0 && searchType === 'content' && (
         <div className="user-results">
-          {results.map((r) => (
-            <article key={r.external_id || r.id} className="user-result">
-              <h3>{r.title || 'Untitled'}</h3>
-              <p className="result-snippet">{(r.content || '').slice(0, 200)}...</p>
-              <div className="result-meta">
-                <span>Score: {((r.score || 0) * 100).toFixed(0)}%</span>
-                <span>Source: {r.source_name || 'unknown'}</span>
-                {r.author && <span>Author: {r.author.slice(0, 16)}...</span>}
-                {r.external_id && <span title={r.external_id}>Event: {r.external_id.slice(0, 8)}...</span>}
-              </div>
-              {r.url && (
-                <a href={r.url} target="_blank" rel="noreferrer">
-                  View →
-                </a>
-              )}
-            </article>
-          ))}
+          {results.map((r) => {
+            const isExpanded = expanded?.id === r.id;
+            const link = getDeepLink(r);
+            
+            return (
+              <article key={r.external_id || r.id} className="user-result">
+                <div onClick={() => toggleExpand(r)} style={{ cursor: 'pointer' }}>
+                  <div className="result-header">
+                    <h3>{r.title || 'Untitled'}</h3>
+                    <span className="score">{((r.score || 0) * 100).toFixed(0)}%</span>
+                  </div>
+                  <p className="result-snippet">
+                    {isExpanded ? r.content : (r.content || '').slice(0, 200) + (r.content?.length > 200 ? '...' : '')}
+                  </p>
+                  <div className="result-meta">
+                    <span>Source: {r.source_name || 'unknown'}</span>
+                    {r.author && <span>Author: {r.author.slice(0, 16)}...</span>}
+                    {r.external_id && <span title={r.external_id}>Event: {r.external_id.slice(0, 8)}...</span>}
+                  </div>
+                </div>
+                
+                {isExpanded && (
+                  <div className="result-actions">
+                    {link && link.type === 'nostr' && (
+                      <a href={link.url} target="_blank" rel="noreferrer" className="action-btn primary">
+                        🔗 View on Primal →
+                      </a>
+                    )}
+                    {link && link.type === 'web' && (
+                      <a href={link.url} target="_blank" rel="noreferrer" className="action-btn primary">
+                        🌐 View Source →
+                      </a>
+                    )}
+                    <button onClick={() => setExpanded(null)} className="action-btn secondary">
+                      ✕ Collapse
+                    </button>
+                  </div>
+                )}
+                
+                {!isExpanded && (
+                  <button onClick={() => toggleExpand(r)} className="expand-hint">
+                    Click to expand ↓
+                  </button>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
 
@@ -139,7 +190,7 @@ function UserApp() {
                 {u.wot_score && <span>🤝 WoT: {u.wot_score.toFixed(2)}</span>}
               </div>
               {u.profile_url && (
-                <a href={u.profile_url} target="_blank" rel="noreferrer">
+                <a href={u.profile_url} target="_blank" rel="noreferrer" className="action-btn primary">
                   View Profile →
                 </a>
               )}
