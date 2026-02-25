@@ -1634,6 +1634,7 @@ app.listen(PORT, () => {
   getEmbedder().catch(console.error);
 });
 
+
 // User search endpoint
 app.get('/api/search/users', async (req: Request, res: Response) => {
   const { q, limit = 20 } = req.query;
@@ -1645,58 +1646,33 @@ app.get('/api/search/users', async (req: Request, res: Response) => {
   try {
     const searchLimit = Math.min(parseInt(String(limit), 10) || 20, 100);
     
-    // Search by NIP-05 or npub/pubkey
-    const isNpub = q.startsWith('npub');
-    const isHex = /^[0-9a-f]{64}$/i.test(q);
+    // For now, just search by pubkey since we don't have profile metadata ingested yet
+    // Future: ingest kind 0 events to populate nip05, name, display_name, about
     
-    let results;
-    
-    if (isNpub || isHex) {
-      // Search by pubkey
-      results = await pool.query(
-        `SELECT DISTINCT
-          ne.pubkey,
-          d.author,
-          d.attributes->>'nip05' as nip05,
-          d.attributes->>'name' as name,
-          d.attributes->>'display_name' as display_name,
-          d.attributes->>'about' as about,
-          COUNT(DISTINCT ne.event_id) as event_count
-        FROM nostr_events ne
-        LEFT JOIN documents d ON d.id = ne.document_id
-        WHERE ne.pubkey LIKE $1
-        GROUP BY ne.pubkey, d.author, d.attributes
-        LIMIT $2`,
-        [`%${q.slice(0, 16)}%`, searchLimit]
-      );
-    } else {
-      // Search by NIP-05
-      results = await pool.query(
-        `SELECT DISTINCT
-          ne.pubkey,
-          d.author,
-          d.attributes->>'nip05' as nip05,
-          d.attributes->>'name' as name,
-          d.attributes->>'display_name' as display_name,
-          d.attributes->>'about' as about,
-          COUNT(DISTINCT ne.event_id) as event_count
-        FROM documents d
-        JOIN nostr_events ne ON d.id = ne.document_id
-        WHERE d.attributes->>'nip05' ILIKE $1
-           OR LOWER(d.attributes->>'name') LIKE $2
-           OR LOWER(d.attributes->>'display_name') LIKE $2
-        GROUP BY ne.pubkey, d.author, d.attributes
-        LIMIT $3`,
-        [`%${q}%`, `%${q.toLowerCase()}%`, searchLimit]
-      );
-    }
+    const results = await pool.query(`
+      SELECT 
+        ne.pubkey,
+        d.attributes->>'author' as author,
+        d.attributes->>'nip05' as nip05,
+        d.attributes->>'name' as name,
+        d.attributes->>'display_name' as display_name,
+        d.attributes->>'about' as about,
+        COUNT(DISTINCT ne.event_id) as event_count
+      FROM nostr_events ne
+      LEFT JOIN documents d ON d.id = ne.document_id
+      WHERE ne.pubkey LIKE $1
+      GROUP BY ne.pubkey, d.attributes
+      ORDER BY event_count DESC
+      LIMIT $2`,
+      [`%${q}%`, searchLimit]
+    );
     
     const users = results.rows.map(row => ({
       pubkey: row.pubkey,
       npub: row.pubkey ? `npub...${row.pubkey.slice(0, 8)}` : null,
       nip05: row.nip05,
       name: row.name,
-      display_name: row.display_name,
+      display_name: row.display_name || row.name,
       about: row.about,
       event_count: parseInt(row.event_count, 10) || 0,
       profile_url: row.pubkey ? `https://primal.net/p/${row.pubkey}` : null
@@ -1706,56 +1682,5 @@ app.get('/api/search/users', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('User search error:', error);
     res.status(500).json({ error: 'User search failed', details: error.message });
-  }
-});
-
-// Link preview endpoint (OpenGraph metadata)
-app.get('/api/link-preview', async (req: Request, res: Response) => {
-  const { url } = req.query;
-  
-  if (!url || typeof url !== 'string') {
-    return res.status(400).json({ error: 'URL parameter required' });
-  }
-  
-  try {
-    // Fetch the URL
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; BeaconBot/1.0; +https://beacon.strangesignal.ai)'
-      },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(5000) // 5s timeout
-    });
-    
-    if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch URL' });
-    }
-    
-    const html = await response.text();
-    
-    // Parse OpenGraph tags
-    const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/)?.[1];
-    const ogDescription = html.match(/<meta property="og:description" content="([^"]+)"/)?.[1];
-    const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
-    const ogUrl = html.match(/<meta property="og:url" content="([^"]+)"/)?.[1];
-    
-    // Fallback to regular meta tags
-    const title = ogTitle || html.match(/<title>([^<]+)<\/title>/)?.[1];
-    const description = ogDescription || html.match(/<meta name="description" content="([^"]+)"/)?.[1];
-    
-    // Extract domain
-    const domain = new URL(url).hostname;
-    
-    res.json({
-      url: ogUrl || url,
-      title: title?.trim(),
-      description: description?.trim()?.slice(0, 200),
-      image: ogImage,
-      domain
-    });
-    
-  } catch (error: any) {
-    console.error('Link preview error:', error);
-    res.status(500).json({ error: 'Failed to generate preview', details: error.message });
   }
 });
