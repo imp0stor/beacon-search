@@ -20,6 +20,9 @@ import { createFrpeiRoutes } from './frpei/routes';
 import { PluginManager, WoTPlugin, PluginContext, CacheClient } from './plugins';
 import { createAdminRoutes } from './routes/admin';
 import { adminAuthMiddleware } from './middleware/adminAuth';
+import { AlertService } from './services/AlertService';
+import { SyncExecutor } from './sync/SyncExecutor';
+import { SyncScheduler } from './sync/SyncScheduler';
 
 // Disable local model caching issues in Docker
 env.cacheDir = '/tmp/transformers-cache';
@@ -65,6 +68,11 @@ connectorManager.setWebhookEmitter(webhookManager);
 
 // Initialize source portal manager
 const sourcePortalManager = new SourcePortalManager(pool);
+
+// Initialize sync services
+const alertService = new AlertService(pool);
+const syncExecutor = new SyncExecutor(pool, alertService);
+const syncScheduler = new SyncScheduler(pool, syncExecutor);
 
 // Export webhook manager for use in other modules
 export { webhookManager };
@@ -1539,7 +1547,7 @@ app.get('/api/stats', async (_req: Request, res: Response) => {
 import { createConfigGitRoutes } from './config-git';
 
 // Mount admin routes (protected)
-app.use('/api/admin', adminAuthMiddleware, createAdminRoutes(pool));
+app.use('/api/admin', adminAuthMiddleware, createAdminRoutes(pool, syncExecutor));
 
 // Mount git routes
 app.use('/api/config', createConfigGitRoutes());
@@ -1594,6 +1602,9 @@ const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log(`🔍 Beacon Search API running on port ${PORT}`);
+  syncScheduler.start().catch((err) => {
+    console.error('Failed to start sync scheduler:', err);
+  });
   console.log(`📚 Endpoints available:`);
   console.log(`   POST /api/ask - RAG query with LLM`);
   console.log(`   GET  /api/search - Enhanced search with expansions`);
