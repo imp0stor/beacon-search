@@ -1708,3 +1708,54 @@ app.get('/api/search/users', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'User search failed', details: error.message });
   }
 });
+
+// Link preview endpoint (OpenGraph metadata)
+app.get('/api/link-preview', async (req: Request, res: Response) => {
+  const { url } = req.query;
+  
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'URL parameter required' });
+  }
+  
+  try {
+    // Fetch the URL
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; BeaconBot/1.0; +https://beacon.strangesignal.ai)'
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(5000) // 5s timeout
+    });
+    
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Failed to fetch URL' });
+    }
+    
+    const html = await response.text();
+    
+    // Parse OpenGraph tags
+    const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/)?.[1];
+    const ogDescription = html.match(/<meta property="og:description" content="([^"]+)"/)?.[1];
+    const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+    const ogUrl = html.match(/<meta property="og:url" content="([^"]+)"/)?.[1];
+    
+    // Fallback to regular meta tags
+    const title = ogTitle || html.match(/<title>([^<]+)<\/title>/)?.[1];
+    const description = ogDescription || html.match(/<meta name="description" content="([^"]+)"/)?.[1];
+    
+    // Extract domain
+    const domain = new URL(url).hostname;
+    
+    res.json({
+      url: ogUrl || url,
+      title: title?.trim(),
+      description: description?.trim()?.slice(0, 200),
+      image: ogImage,
+      domain
+    });
+    
+  } catch (error: any) {
+    console.error('Link preview error:', error);
+    res.status(500).json({ error: 'Failed to generate preview', details: error.message });
+  }
+});

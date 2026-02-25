@@ -923,3 +923,119 @@
   animation: none;
   background: transparent;
 }
+
+/* Link Container (inline link + preview below) */
+.link-container {
+  display: block;
+  margin: 0.75rem 0;
+}
+
+/* Link Preview Cards */
+.link-preview-card {
+  margin-top: 0.5rem;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #1e293b;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  max-width: 600px;
+}
+
+.link-preview-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.link-preview-card.loading {
+  background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  min-height: 120px;
+}
+
+/* Preview Image */
+.preview-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.preview-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Preview Content */
+.preview-content {
+  padding: 1rem;
+}
+
+.preview-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #f1f5f9;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.preview-description {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 0.5rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.preview-domain {
+  color: #64748b;
+  font-size: 0.8rem;
+  text-transform: lowercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.preview-domain::before {
+  content: '🌐';
+  font-size: 0.85rem;
+}
+
+/* Preview Skeleton (loading state) */
+.preview-skeleton {
+  padding: 1rem;
+}
+
+.skeleton-title {
+  height: 20px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  width: 80%;
+}
+
+.skeleton-text {
+  height: 14px;
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .preview-image {
+    height: 150px;
+  }
+  
+  .link-preview-card {
+    max-width: 100%;
+  }
+}

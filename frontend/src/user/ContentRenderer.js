@@ -1,8 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Parse and render rich content with embeds
 function ContentRenderer({ content }) {
+  const [linkPreviews, setLinkPreviews] = useState({});
+  const [loadingPreviews, setLoadingPreviews] = useState(new Set());
+
   if (!content) return null;
+
+  // Extract URLs from content
+  const extractUrls = (text) => {
+    const urlPattern = /(https?:\/\/[^\s]+)/gi;
+    const urls = [];
+    let match;
+    while ((match = urlPattern.exec(text)) !== null) {
+      urls.push(match[0]);
+    }
+    return urls;
+  };
+
+  // Fetch link preview for a URL
+  const fetchLinkPreview = async (url) => {
+    if (loadingPreviews.has(url) || linkPreviews[url]) return;
+    
+    setLoadingPreviews(prev => new Set(prev).add(url));
+    
+    try {
+      const res = await fetch('/api/link-preview?url=' + encodeURIComponent(url));
+      if (res.ok) {
+        const data = await res.json();
+        setLinkPreviews(prev => ({ ...prev, [url]: data }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch preview for', url, err);
+    } finally {
+      setLoadingPreviews(prev => {
+        const next = new Set(prev);
+        next.delete(url);
+        return next;
+      });
+    }
+  };
+
+  // Load previews for all URLs
+  useEffect(() => {
+    const urls = extractUrls(content);
+    urls.forEach(url => fetchLinkPreview(url));
+  }, [content]);
 
   const renderContent = () => {
     const parts = [];
@@ -31,7 +74,6 @@ function ContentRenderer({ content }) {
     let urlMatch;
     urlPattern.lastIndex = 0;
     while ((urlMatch = urlPattern.exec(content)) !== null) {
-      // Skip if this URL is an image we already found
       const isImage = images.some(img => img.index === urlMatch.index);
       if (!isImage) {
         urls.push({
@@ -45,7 +87,6 @@ function ContentRenderer({ content }) {
     // Find Nostr references
     const nostrRefs = [];
     
-    // Bech32 encoded (note1, nevent1, etc.)
     let bechMatch;
     nostrEventPattern.lastIndex = 0;
     while ((bechMatch = nostrEventPattern.exec(content)) !== null) {
@@ -57,7 +98,6 @@ function ContentRenderer({ content }) {
       });
     }
     
-    // Hex event IDs
     let hexMatch;
     nostrHexPattern.lastIndex = 0;
     while ((hexMatch = nostrHexPattern.exec(content)) !== null) {
@@ -107,20 +147,50 @@ function ContentRenderer({ content }) {
           </div>
         );
       } else if (match.type === 'url') {
+        const preview = linkPreviews[match.url];
         const displayUrl = match.url.length > 50 
           ? match.url.slice(0, 50) + '...' 
           : match.url;
+        
         parts.push(
-          <a 
-            key={'url-' + idx}
-            href={match.url} 
-            target="_blank" 
-            rel="noreferrer"
-            className="embedded-link"
-            title={match.url}
-          >
-            🔗 {displayUrl}
-          </a>
+          <div key={'url-' + idx} className="link-container">
+            <a 
+              href={match.url} 
+              target="_blank" 
+              rel="noreferrer"
+              className="embedded-link"
+              title={match.url}
+            >
+              🔗 {displayUrl}
+            </a>
+            
+            {preview && (
+              <div className="link-preview-card">
+                {preview.image && (
+                  <div className="preview-image">
+                    <img src={preview.image} alt={preview.title || 'Preview'} />
+                  </div>
+                )}
+                <div className="preview-content">
+                  <h4>{preview.title || preview.url}</h4>
+                  {preview.description && (
+                    <p className="preview-description">{preview.description}</p>
+                  )}
+                  <span className="preview-domain">{preview.domain || new URL(match.url).hostname}</span>
+                </div>
+              </div>
+            )}
+            
+            {loadingPreviews.has(match.url) && (
+              <div className="link-preview-card loading">
+                <div className="preview-skeleton">
+                  <div className="skeleton-title"></div>
+                  <div className="skeleton-text"></div>
+                  <div className="skeleton-text short"></div>
+                </div>
+              </div>
+            )}
+          </div>
         );
       } else if (match.type === 'nostr-hex') {
         parts.push(
