@@ -165,3 +165,14 @@ export async function fetchSystemHealth() {
   const response = await client.get('/health');
   return response.data;
 }
+
+
+export async function listSystemSettings() {
+  const response = await client.get('/api/admin/settings');
+  return toArray(response.data);
+}
+
+export async function updateSystemSetting(key, payload) {
+  const response = await client.put('/api/admin/settings/' + encodeURIComponent(key), payload);
+  return response.data;
+}

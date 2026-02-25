@@ -35,9 +35,29 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://beacon:beacon_secret@localhost:5432/beacon_search'
 });
 
-// OpenAI API for RAG
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+interface RuntimeConfig {
+  openaiApiKey: string;
+  openaiModel: string;
+  wot: {
+    enabled: boolean;
+    provider: 'nostrmaxi' | 'local';
+    nostrmaxiUrl: string;
+    weight: number;
+    cacheTtl: number;
+  };
+}
+
+const runtimeConfig: RuntimeConfig = {
+  openaiApiKey: process.env.OPENAI_API_KEY || '',
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  wot: {
+    enabled: process.env.WOT_ENABLED === 'true',
+    provider: (process.env.WOT_PROVIDER || 'local') as 'nostrmaxi' | 'local',
+    nostrmaxiUrl: process.env.NOSTRMAXI_URL || 'http://localhost:3000',
+    weight: parseFloat(process.env.WOT_WEIGHT || '1.0'),
+    cacheTtl: parseInt(process.env.WOT_CACHE_TTL || '3600')
+  }
+};
 
 // Embedding model (loaded once)
 let embedder: any = null;
@@ -111,17 +131,15 @@ const pluginContext: PluginContext = {
 };
 
 const wotConfig = {
-  enabled: process.env.WOT_ENABLED === 'true',
-  provider: (process.env.WOT_PROVIDER || 'local') as 'nostrmaxi' | 'local',
-  nostrmaxi_url: process.env.NOSTRMAXI_URL || 'http://localhost:3000',
-  weight: parseFloat(process.env.WOT_WEIGHT || '1.0'),
-  cache_ttl: parseInt(process.env.WOT_CACHE_TTL || '3600'),
+  enabled: runtimeConfig.wot.enabled,
+  provider: runtimeConfig.wot.provider,
+  nostrmaxi_url: runtimeConfig.wot.nostrmaxiUrl,
+  weight: runtimeConfig.wot.weight,
+  cache_ttl: runtimeConfig.wot.cacheTtl,
 };
 
 const pluginManager = new PluginManager(pluginContext);
 pluginManager.register(new WoTPlugin(wotConfig));
-// Initialize plugins asynchronously (non-blocking startup)
-pluginManager.initAll().catch((err) => console.error('Plugin init failed:', err));
 
 // ============================================
 // TYPES
@@ -143,6 +161,77 @@ interface Trigger {
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
+
+const SYSTEM_SETTING_KEYS = new Set([
+  'OPENAI_API_KEY',
+  'OPENAI_MODEL',
+  'WOT_ENABLED',
+  'WOT_PROVIDER',
+  'NOSTRMAXI_URL',
+  'WOT_WEIGHT',
+  'WOT_CACHE_TTL'
+]);
+
+function parseBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return fallback;
+}
+
+function parseNumber(value: unknown, fallback: number): number {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function applyRuntimeSetting(key: string, value: unknown): void {
+  switch (key) {
+    case 'OPENAI_API_KEY':
+      runtimeConfig.openaiApiKey = typeof value === 'string' ? value : (value == null ? '' : String(value));
+      break;
+    case 'OPENAI_MODEL':
+      if (typeof value === 'string' && value.trim()) runtimeConfig.openaiModel = value.trim();
+      break;
+    case 'WOT_ENABLED':
+      runtimeConfig.wot.enabled = parseBoolean(value, runtimeConfig.wot.enabled);
+      break;
+    case 'WOT_PROVIDER': {
+      const provider = String(value || '').toLowerCase();
+      runtimeConfig.wot.provider = provider === 'nostrmaxi' ? 'nostrmaxi' : 'local';
+      break;
+    }
+    case 'NOSTRMAXI_URL':
+      if (typeof value === 'string' && value.trim()) runtimeConfig.wot.nostrmaxiUrl = value.trim();
+      break;
+    case 'WOT_WEIGHT':
+      runtimeConfig.wot.weight = parseNumber(value, runtimeConfig.wot.weight);
+      break;
+    case 'WOT_CACHE_TTL':
+      runtimeConfig.wot.cacheTtl = Math.max(1, Math.floor(parseNumber(value, runtimeConfig.wot.cacheTtl)));
+      break;
+    default:
+      break;
+  }
+}
+
+async function loadSystemSettingsFromDb(): Promise<void> {
+  try {
+    const result = await pool.query('SELECT key, value FROM system_settings WHERE key = ANY($1)', [Array.from(SYSTEM_SETTING_KEYS)]);
+    for (const row of result.rows) {
+      applyRuntimeSetting(row.key, row.value);
+    }
+    console.log(`Loaded ${result.rowCount || 0} system settings from database`);
+  } catch (error: any) {
+    if (error?.code === '42P01') {
+      console.warn('system_settings table not found; using environment defaults');
+      return;
+    }
+    console.warn('Failed to load system settings from database; using environment defaults:', error?.message || error);
+  }
+}
 
 // Evaluate triggers against query
 async function evaluateTriggers(query: string): Promise<Trigger[]> {
@@ -229,7 +318,7 @@ function applyExpansionBoost(results: any[], rewrite: { originalTerms: string[];
 
 // Call OpenAI API
 async function callOpenAI(prompt: string, systemPrompt: string): Promise<string> {
-  if (!OPENAI_API_KEY) {
+  if (!runtimeConfig.openaiApiKey) {
     throw new Error('OPENAI_API_KEY not configured');
   }
   
@@ -237,10 +326,10 @@ async function callOpenAI(prompt: string, systemPrompt: string): Promise<string>
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${runtimeConfig.openaiApiKey}`
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model: runtimeConfig.openaiModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
@@ -309,7 +398,7 @@ app.post('/api/ask', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Question is required' });
     }
     
-    if (!OPENAI_API_KEY) {
+    if (!runtimeConfig.openaiApiKey) {
       return res.status(503).json({ error: 'OpenAI API not configured. Set OPENAI_API_KEY environment variable.' });
     }
     
@@ -373,7 +462,7 @@ Be concise but thorough.`;
       question,
       answer,
       sources,
-      model: OPENAI_MODEL
+      model: runtimeConfig.openaiModel
     };
 
     // Emit webhook event (non-blocking)
@@ -381,7 +470,7 @@ Be concise but thorough.`;
       question,
       answer_length: answer.length,
       sources_count: sources.length,
-      model: OPENAI_MODEL
+      model: runtimeConfig.openaiModel
     }).catch(console.error);
 
     res.json(response);
@@ -1547,7 +1636,11 @@ app.get('/api/stats', async (_req: Request, res: Response) => {
 import { createConfigGitRoutes } from './config-git';
 
 // Mount admin routes (protected)
-app.use('/api/admin', adminAuthMiddleware, createAdminRoutes(pool, syncExecutor));
+app.use('/api/admin', adminAuthMiddleware, createAdminRoutes(pool, syncExecutor, (key, value) => {
+  if (SYSTEM_SETTING_KEYS.has(key)) {
+    applyRuntimeSetting(key, value);
+  }
+}));
 
 // Mount git routes
 app.use('/api/config', createConfigGitRoutes());
@@ -1600,7 +1693,11 @@ console.log(`🤖 AI Processing: OCR=${processingConfig.ocr.enabled}, Translatio
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
+async function bootstrap() {
+  await loadSystemSettingsFromDb();
+  pluginManager.initAll().catch((err) => console.error('Plugin init failed:', err));
+
+  app.listen(PORT, () => {
   console.log(`🔍 Beacon Search API running on port ${PORT}`);
   syncScheduler.start().catch((err) => {
     console.error('Failed to start sync scheduler:', err);
@@ -1648,8 +1745,8 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/frpei/status - FRPEI provider health`);
   // Pre-load the embedding model
   getEmbedder().catch(console.error);
-});
-
+  });
+}
 
 // User search endpoint
 app.get('/api/search/users', async (req: Request, res: Response) => {
@@ -1699,4 +1796,10 @@ app.get('/api/search/users', async (req: Request, res: Response) => {
     console.error('User search error:', error);
     res.status(500).json({ error: 'User search failed', details: error.message });
   }
+});
+
+
+bootstrap().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });

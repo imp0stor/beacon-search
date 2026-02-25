@@ -15,7 +15,7 @@ import Dashboard from './admin/pages/Dashboard.tsx';
 import ServersPage from './admin/pages/ServersPage.tsx';
 import DocumentTypesPage from './admin/pages/DocumentTypesPage.tsx';
 import CrawlersPage from './admin/pages/CrawlersPage.tsx';
-import SettingsPage from './admin/pages/SettingsPage.tsx';
+import SystemSettingsPage from './admin/pages/SystemSettingsPage.tsx';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -90,7 +90,7 @@ function App() {
           <Route path="servers" element={<ServersPage />} />
           <Route path="document-types" element={<DocumentTypesPage />} />
           <Route path="crawlers" element={<CrawlersPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings" element={<SystemSettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
