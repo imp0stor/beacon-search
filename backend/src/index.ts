@@ -18,6 +18,8 @@ import { createMovieRoutes } from './movies/routes';
 import { createMediaRoutes } from './media/routes';
 import { createFrpeiRoutes } from './frpei/routes';
 import { PluginManager, WoTPlugin, PluginContext, CacheClient } from './plugins';
+import { createAdminRoutes } from './routes/admin';
+import { adminAuthMiddleware } from './middleware/adminAuth';
 
 // Disable local model caching issues in Docker
 env.cacheDir = '/tmp/transformers-cache';
@@ -1535,6 +1537,9 @@ app.get('/api/stats', async (_req: Request, res: Response) => {
 });
 
 import { createConfigGitRoutes } from './config-git';
+
+// Mount admin routes (protected)
+app.use('/api/admin', adminAuthMiddleware, createAdminRoutes(pool));
 
 // Mount git routes
 app.use('/api/config', createConfigGitRoutes());
