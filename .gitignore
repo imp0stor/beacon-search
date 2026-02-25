@@ -10,3 +10,7 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+
+# Test coverage reports (generated artifacts)
+coverage/
+.nyc_output/
