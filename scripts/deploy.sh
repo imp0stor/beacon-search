@@ -125,6 +125,18 @@ preflight_checks() {
     log OK "Pre-flight checks passed"
 }
 
+validate_schema_predeploy() {
+    log INFO "Running schema validation check..."
+
+    "${PROJECT_DIR}/scripts/validate-schema.sh" || {
+        log ERROR "Schema validation failed! Aborting deploy."
+        return 1
+    }
+
+    log OK "Schema validation passed"
+    return 0
+}
+
 # -----------------------------------------------------------------------------
 # Health Checks
 # -----------------------------------------------------------------------------
@@ -530,6 +542,9 @@ main() {
     if [[ "$do_build" == true ]]; then
         build_images
     fi
+
+    # Validate schema before bringing services up
+    validate_schema_predeploy
     
     # Deploy services
     deploy_services "$profiles"
