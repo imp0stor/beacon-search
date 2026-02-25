@@ -23,6 +23,7 @@ import { adminAuthMiddleware } from './middleware/adminAuth';
 import { AlertService } from './services/AlertService';
 import { SyncExecutor } from './sync/SyncExecutor';
 import { SyncScheduler } from './sync/SyncScheduler';
+import { getSearchFacets } from './search/facets';
 
 // Disable local model caching issues in Docker
 env.cacheDir = '/tmp/transformers-cache';
@@ -742,6 +743,17 @@ app.get('/api/search', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: 'Search failed', details: (error as Error).message });
+  }
+});
+
+
+app.get('/api/search/facets', async (_req: Request, res: Response) => {
+  try {
+    const facets = await getSearchFacets(pool);
+    res.json(facets);
+  } catch (error) {
+    console.error('Search facets error:', error);
+    res.status(500).json({ error: 'Failed to fetch search facets' });
   }
 });
 
