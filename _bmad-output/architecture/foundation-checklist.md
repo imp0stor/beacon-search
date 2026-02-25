@@ -3,29 +3,29 @@
 Reference: ~/strangesignal/standards/FOUNDATION-RUNBOOK.md
 
 ## 1) Admin Console
-- [ ] `/admin` route exists
-- [ ] Dashboard (status + alerts + recent activity)
-- [ ] CRUD pages for configurable entities
-- [ ] Loading/error/empty states implemented
+- [x] `/admin` route exists
+- [x] Dashboard (status + alerts + recent activity)
+- [x] CRUD pages for configurable entities
+- [x] Loading/error/empty states implemented
 
 ## 2) Configuration Storage
-- [ ] Config in DB tables (not hardcoded constants)
-- [ ] Migrations include up + down scripts
-- [ ] `system_settings` pattern available
+- [x] Config in DB tables (not hardcoded constants)
+- [x] Migrations include up + down scripts
+- [x] `system_settings` pattern available
 
 ## 3) Connector/Plugin Layer
-- [ ] Base abstraction/interface exists
-- [ ] Factory/registry used for connector creation
-- [ ] At least one real connector implemented
+- [x] Base abstraction/interface exists
+- [x] Factory/registry used for connector creation
+- [x] At least one real connector implemented
 
 ## 4) Execution Engine
-- [ ] Manual trigger endpoint/action
-- [ ] Scheduled execution supported
-- [ ] Execution history persisted
-- [ ] Alerts emitted on failures
+- [x] Manual trigger endpoint/action
+- [x] Scheduled execution supported
+- [x] Execution history persisted
+- [x] Alerts emitted on failures
 
 ## 5) Quality Gates
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
-- [ ] Integration smoke test run
-- [ ] Docs updated
+- [x] `npm run build` passes
+- [x] `npm test` passes
+- [x] Integration smoke test run
+- [x] Docs updated
