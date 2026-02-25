@@ -669,3 +669,56 @@
     width: 100%;
   }
 }
+
+/* Search Controls */
+.search-controls {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.search-type-toggle {
+  display: inline-flex;
+  gap: 0.5rem;
+  background: #1e293b;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid #334155;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.toggle-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.toggle-btn:hover:not(.active) {
+  background: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+}
+
+/* User Result Styles */
+.user-nip05 {
+  color: #60a5fa;
+  font-size: 0.95rem;
+  margin: 0.5rem 0;
+}
+
+.user-npub {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  margin: 0.25rem 0;
+}

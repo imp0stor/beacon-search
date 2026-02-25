@@ -1633,3 +1633,78 @@ app.listen(PORT, () => {
   // Pre-load the embedding model
   getEmbedder().catch(console.error);
 });
+
+// User search endpoint
+app.get('/api/search/users', async (req: Request, res: Response) => {
+  const { q, limit = 20 } = req.query;
+  
+  if (!q || typeof q !== 'string') {
+    return res.status(400).json({ error: 'Query parameter q is required' });
+  }
+
+  try {
+    const searchLimit = Math.min(parseInt(String(limit), 10) || 20, 100);
+    
+    // Search by NIP-05 or npub/pubkey
+    const isNpub = q.startsWith('npub');
+    const isHex = /^[0-9a-f]{64}$/i.test(q);
+    
+    let results;
+    
+    if (isNpub || isHex) {
+      // Search by pubkey
+      results = await pool.query(
+        `SELECT DISTINCT
+          ne.pubkey,
+          d.author,
+          d.attributes->>'nip05' as nip05,
+          d.attributes->>'name' as name,
+          d.attributes->>'display_name' as display_name,
+          d.attributes->>'about' as about,
+          COUNT(DISTINCT ne.event_id) as event_count
+        FROM nostr_events ne
+        LEFT JOIN documents d ON d.id = ne.document_id
+        WHERE ne.pubkey LIKE $1
+        GROUP BY ne.pubkey, d.author, d.attributes
+        LIMIT $2`,
+        [`%${q.slice(0, 16)}%`, searchLimit]
+      );
+    } else {
+      // Search by NIP-05
+      results = await pool.query(
+        `SELECT DISTINCT
+          ne.pubkey,
+          d.author,
+          d.attributes->>'nip05' as nip05,
+          d.attributes->>'name' as name,
+          d.attributes->>'display_name' as display_name,
+          d.attributes->>'about' as about,
+          COUNT(DISTINCT ne.event_id) as event_count
+        FROM documents d
+        JOIN nostr_events ne ON d.id = ne.document_id
+        WHERE d.attributes->>'nip05' ILIKE $1
+           OR LOWER(d.attributes->>'name') LIKE $2
+           OR LOWER(d.attributes->>'display_name') LIKE $2
+        GROUP BY ne.pubkey, d.author, d.attributes
+        LIMIT $3`,
+        [`%${q}%`, `%${q.toLowerCase()}%`, searchLimit]
+      );
+    }
+    
+    const users = results.rows.map(row => ({
+      pubkey: row.pubkey,
+      npub: row.pubkey ? `npub...${row.pubkey.slice(0, 8)}` : null,
+      nip05: row.nip05,
+      name: row.name,
+      display_name: row.display_name,
+      about: row.about,
+      event_count: parseInt(row.event_count, 10) || 0,
+      profile_url: row.pubkey ? `https://primal.net/p/${row.pubkey}` : null
+    }));
+    
+    res.json({ results: users, count: users.length });
+  } catch (error: any) {
+    console.error('User search error:', error);
+    res.status(500).json({ error: 'User search failed', details: error.message });
+  }
+});
