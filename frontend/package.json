@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@strangesignal/nostr-auth": "file:../../../packages/nostr-auth",
     "@tanstack/react-query": "^5.90.21",
     "autoprefixer": "^10.4.24",
     "axios": "^1.13.5",

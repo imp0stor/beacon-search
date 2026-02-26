@@ -10,7 +10,7 @@ import TagCloud from './components/TagCloud.jsx';
 import TagFilterSidebar from './components/TagFilterSidebar.jsx';
 import InfiniteScrollResults from './components/InfiniteScrollResults.jsx';
 import AdminLayout from './admin/AdminLayout.tsx';
-import AdminRoute from './admin/components/AdminRoute.tsx';
+import ProtectedAdminRoute from './admin/components/ProtectedAdminRoute';
 import Dashboard from './admin/pages/Dashboard.tsx';
 import ServersPage from './admin/pages/ServersPage.tsx';
 import DocumentTypesPage from './admin/pages/DocumentTypesPage.tsx';
@@ -81,9 +81,9 @@ function App() {
         <Route
           path="/admin"
           element={(
-            <AdminRoute>
+            <ProtectedAdminRoute>
               <AdminLayout />
-            </AdminRoute>
+            </ProtectedAdminRoute>
           )}
         >
           <Route index element={<Dashboard />} />

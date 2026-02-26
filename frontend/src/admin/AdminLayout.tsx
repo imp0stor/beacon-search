@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@strangesignal/nostr-auth';
 import Sidebar from './components/Sidebar.tsx';
 import Header from './components/Header.tsx';
 import './admin.css';
@@ -16,6 +17,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -24,9 +26,8 @@ export default function AdminLayout() {
   const title = useMemo(() => titleMap[location.pathname] || 'Admin Console', [location.pathname]);
 
   const handleSignOut = () => {
-    localStorage.removeItem('beacon_role');
-    localStorage.removeItem('beacon_user');
-    navigate('/search', { replace: true });
+    signOut();
+    navigate('/admin/login', { replace: true });
   };
 
   return (
@@ -37,6 +38,7 @@ export default function AdminLayout() {
       <section className="admin-shell__main">
         <Header
           title={title}
+          user={user?.npub || user?.role || 'admin'}
           onMenuToggle={() => setSidebarOpen((prev) => !prev)}
           onSignOut={handleSignOut}
         />

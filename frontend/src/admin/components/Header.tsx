@@ -1,8 +1,6 @@
 import React from 'react';
 
-export default function Header({ onMenuToggle = () => {}, onSignOut = () => {}, title = 'Admin Console' }) {
-  const role = localStorage.getItem('beacon_role') || 'admin';
-  const user = localStorage.getItem('beacon_user') || role;
+export default function Header({ onMenuToggle = () => {}, onSignOut = () => {}, title = 'Admin Console', user = 'admin' }) {
 
   return (
     <header className="admin-header">
